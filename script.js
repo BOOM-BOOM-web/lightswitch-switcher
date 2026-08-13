@@ -1,42 +1,41 @@
 // --- SOUND SYSTEM ---
-// Preload the audio files
-let clickSound = new Audio('sounds/buttonclick.mp3');
-clickSound.volume = 0.3; 
-clickSound.preload = 'auto';
+// Grab the audio elements from the HTML
+let clickSound = document.getElementById('audio-click');
+let paySound = document.getElementById('audio-pay');
 
-let paySound = new Audio('sounds/paying.mp3');
-paySound.volume = 0.5;
-paySound.preload = 'auto';
+// Set volumes
+if (clickSound) clickSound.volume = 0.3;
+if (paySound) paySound.volume = 0.5;
 
 function playClick() {
+    if (!clickSound) return;
     try {
-        // Reset to start so rapid clicks overlap nicely
         clickSound.currentTime = 0; 
         let playPromise = clickSound.play();
         
         if (playPromise !== undefined) {
             playPromise.catch(e => {
-                // Autoplay was prevented or file is missing
-                console.warn("Click sound could not play. Are you running on a local server (Live Server)?");
+                console.error("Click Sound Error: " + e.message);
             });
         }
     } catch (e) {
-        console.warn("Audio error:", e);
+        console.error("Audio system error:", e);
     }
 }
 
 function playPay() {
+    if (!paySound) return;
     try {
         paySound.currentTime = 0;
         let playPromise = paySound.play();
         
         if (playPromise !== undefined) {
             playPromise.catch(e => {
-                console.warn("Pay sound could not play. Are you running on a local server (Live Server)?");
+                console.error("Pay Sound Error: " + e.message);
             });
         }
     } catch (e) {
-        console.warn("Audio error:", e);
+        console.error("Audio system error:", e);
     }
 }
 
