@@ -1,22 +1,43 @@
 // --- SOUND SYSTEM ---
-// Make sure you have a folder named "sounds" in the same directory as your index.html
-// Put "buttonclick.mp3" and "paying.mp3" inside that folder.
-
+// Preload the audio files
 let clickSound = new Audio('sounds/buttonclick.mp3');
-clickSound.volume = 0.3; // Lower volume so it's not deafening on rapid clicks
+clickSound.volume = 0.3; 
+clickSound.preload = 'auto';
 
 let paySound = new Audio('sounds/paying.mp3');
 paySound.volume = 0.5;
+paySound.preload = 'auto';
 
 function playClick() {
-    // Reset the audio to the beginning so rapid clicks play a fresh sound each time
-    clickSound.currentTime = 0; 
-    clickSound.play().catch(e => console.warn("Audio play blocked until user interacts."));
+    try {
+        // Reset to start so rapid clicks overlap nicely
+        clickSound.currentTime = 0; 
+        let playPromise = clickSound.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                // Autoplay was prevented or file is missing
+                console.warn("Click sound could not play. Are you running on a local server (Live Server)?");
+            });
+        }
+    } catch (e) {
+        console.warn("Audio error:", e);
+    }
 }
 
 function playPay() {
-    paySound.currentTime = 0;
-    paySound.play().catch(e => console.warn("Audio play blocked until user interacts."));
+    try {
+        paySound.currentTime = 0;
+        let playPromise = paySound.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.warn("Pay sound could not play. Are you running on a local server (Live Server)?");
+            });
+        }
+    } catch (e) {
+        console.warn("Audio error:", e);
+    }
 }
 
 // --- GAME STATE ---
@@ -106,7 +127,6 @@ function toggleSwitch(isAuto = false) {
     let boltEl = document.getElementById('lightning-bolt');
     
     if (state.isOn) {
-        // Play the clicking sound! (Only on manual clicks to save sanity)
         if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
@@ -120,7 +140,6 @@ function toggleSwitch(isAuto = false) {
         setTimeout(() => boltEl.style.opacity = 0.6, 100);
 
         if(!isAuto) {
-            // Calculate Crit
             let isCrit = Math.random() < getCritChance();
             if (isCrit) {
                 power *= 10;
@@ -149,7 +168,6 @@ function toggleSwitch(isAuto = false) {
 function buyUpgrade(key) {
     let cost = getCost(key);
     if (state.watts >= cost) {
-        // Play the paying sound!
         playPay();
         
         state.watts -= cost;
@@ -190,7 +208,6 @@ function doPrestige() {
     state.watts = 0;
     state.totalWatts = 0;
     state.heat = 0;
-    // Reset all upgrades
     for (const key in state.upgrades) {
         state.upgrades[key].level = 0;
     }
@@ -271,7 +288,6 @@ function updateUI() {
     let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
     document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
 
-    // Loop through ALL upgrades and update their specific DOM elements
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
@@ -305,7 +321,6 @@ function updateUI() {
 setInterval(() => {
     if (state.breakerTripped) return;
 
-    // Dynamic heat decay based on Thermal Paste upgrade (0.1s interval)
     state.heat = Math.max(0, state.heat - (getHeatDecayPerSec() * 0.1));
     
     let autoWps = getAutoPower();
@@ -313,7 +328,6 @@ setInterval(() => {
         state.watts += autoWps * 0.1; 
         state.totalWatts += autoWps * 0.1;
         
-        // Only the Auto-Flicker generates heat, Solar Panels do not
         let autoHeatGen = (state.upgrades.auto.value * state.upgrades.auto.level) * 0.05; 
         state.heat += autoHeatGen * 0.1; 
         if (state.heat >= 100) tripBreaker();
