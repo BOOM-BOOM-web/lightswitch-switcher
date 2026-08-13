@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flip the Switch: Idle Illumination</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="vignette"></div>
+
+    <!-- ================= VIEW: GAME ================= -->
+    <div id="view-game" class="view active">
+        <div id="stats-container">
+            <div id="watts-display">0 W</div>
+            <div id="watts-per-sec">per second: 0.0</div>
+            <div id="capacitors-display">0 Capacitors</div>
+        </div>
+
+        <div id="menu-buttons">
+            <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
+            <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
+        </div>
+
+        <div id="lightning-container">
+            <svg id="lightning-bolt" viewBox="0 0 100 100">
+                <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
+            </svg>
+        </div>
+
+        <div id="switch-container" onclick="toggleSwitch()">
+            <div id="switch-plate">
+                <div class="screw top"></div>
+                <div id="switch-rocker"></div>
+                <div class="screw bottom"></div>
+            </div>
+        </div>
+
+        <div id="heat-container">
+            <div id="heat-bar"></div>
+        </div>
+
+        <!-- Prestige/Restart Section -->
+        <div id="prestige-container">
+            <div id="prestige-info">
+                <div>OVERLOAD GRID</div>
+                <div>Bonus: <span id="prestige-bonus">0%</span> | Gain: <span id="prestige-gain">0</span></div>
+            </div>
+            <button id="prestige-btn" onclick="doPrestige()" disabled>OVERLOAD</button>
+        </div>
+
+        <div id="float-container" style="position: absolute; top: 40%; left: 50%; width: 1px; height: 1px; z-index: 10;"></div>
+
+        <div id="breaker-overlay">
+            <h2>BREAKER<br>TRIPPED!</h2>
+            <p style="font-size: 0.7rem; color:#fff;">System Rebooting...</p>
+            <div id="reboot-bar"><div id="reboot-fill"></div></div>
+        </div>
+    </div>
+
+    <!-- ================= VIEW: SHOP ================= -->
+    <div id="view-shop" class="view">
+        <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
+        <div class="page-container">
+            <h2 class="page-title">STORE</h2>
+
+            <div class="upgrade-card" onclick="buyUpgrade('click')">
+                <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
+                <div class="upg-info">Cost: <span id="click-cost">10</span> W</div>
+                <div class="upg-info">Doubles manual click W</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('surge')">
+                <div class="upg-name">- Surge Protector <span id="surge-level">0</span></div>
+                <div class="upg-info">Cost: <span id="surge-cost">500</span> W</div>
+                <div class="upg-info">+1% Crit Chance (10x W per click)</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('cooling')">
+                <div class="upg-name">- Cooling Fan <span id="cooling-level">0</span></div>
+                <div class="upg-info">Cost: <span id="cooling-cost">100</span> W</div>
+                <div class="upg-info">-10% heat generation per click</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('liquid')">
+                <div class="upg-name">- Liquid Cooling <span id="liquid-level">0</span></div>
+                <div class="upg-info">Cost: <span id="liquid-cost">2000</span> W</div>
+                <div class="upg-info">-0.2 Flat heat per click</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('thermal')">
+                <div class="upg-name">- Thermal Paste <span id="thermal-level">0</span></div>
+                <div class="upg-info">Cost: <span id="thermal-cost">800</span> W</div>
+                <div class="upg-info">+0.5 Heat decay per second</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('auto')">
+                <div class="upg-name">- Auto-Flicker AI <span id="auto-level">0</span></div>
+                <div class="upg-info">Cost: <span id="auto-cost">50</span> W</div>
+                <div class="upg-info">+2 Passive W/s</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('quantum')">
+                <div class="upg-name">- Quantum Processor <span id="quantum-level">0</span></div>
+                <div class="upg-info">Cost: <span id="quantum-cost">5000</span> W</div>
+                <div class="upg-info">x2 Auto-Flicker AI output</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('solar')">
+                <div class="upg-name">- Solar Panel <span id="solar-level">0</span></div>
+                <div class="upg-info">Cost: <span id="solar-cost">1000</span> W</div>
+                <div class="upg-info">+50 Passive W/s (Generates no heat)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= VIEW: ACHIEVEMENTS ================= -->
+    <div id="view-achvmt" class="view">
+        <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
+        <div class="page-container">
+            <h2 class="page-title">ACHIEVEMENTS</h2>
+            <div id="achv-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
