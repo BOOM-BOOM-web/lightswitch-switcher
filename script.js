@@ -2,10 +2,12 @@
 // Grab the audio elements from the HTML
 let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
+let sirenSound = document.getElementById('audio-siren');
 
 // Set volumes
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 0.5;
+if (sirenSound) sirenSound.volume = 0.6;
 
 function playClick() {
     if (!clickSound) return;
@@ -32,6 +34,22 @@ function playPay() {
         if (playPromise !== undefined) {
             playPromise.catch(e => {
                 console.error("Pay Sound Error: " + e.message);
+            });
+        }
+    } catch (e) {
+        console.error("Audio system error:", e);
+    }
+}
+
+function playSiren() {
+    if (!sirenSound) return;
+    try {
+        sirenSound.currentTime = 0;
+        let playPromise = sirenSound.play();
+        
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.error("Siren Sound Error: " + e.message);
             });
         }
     } catch (e) {
@@ -178,6 +196,10 @@ function buyUpgrade(key) {
 function tripBreaker() {
     state.breakerTripped = true;
     state.heat = 0;
+    
+    // Play the siren sound!
+    playSiren();
+    
     document.getElementById('breaker-overlay').style.display = 'flex';
     document.getElementById('lightning-bolt').style.opacity = 0; 
     document.getElementById('switch-rocker').style.boxShadow = "none"; 
