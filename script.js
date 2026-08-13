@@ -360,3 +360,7 @@ setInterval(() => {
 // Init
 toggleSwitch(true); 
 updateUI();
+
+// Initialize Saving and Offline Progress
+SaveManager.load();
+SaveManager.initSaveLoop();
