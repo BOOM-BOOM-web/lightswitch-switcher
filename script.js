@@ -6,7 +6,7 @@ let sirenSound = document.getElementById('audio-siren');
 
 // Set volumes
 if (clickSound) clickSound.volume = 0.3;
-if (paySound) paySound.volume = 0.5;
+if (paySound) paySound.volume = 1.0;
 if (sirenSound) sirenSound.volume = 0.6;
 
 function playClick() {
