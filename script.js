@@ -1,16 +1,22 @@
 // --- SOUND SYSTEM ---
-// To add your sounds, put your audio files in a folder (e.g., /sounds)
-// and call playSound('switch_on.mp3') inside the toggleSwitch function.
-function playSound(src) {
-    // Browsers block auto-play sound until the user interacts with the page.
-    // Since this is called inside an onclick event, it will work safely.
-    try {
-        const audio = new Audio(`sounds/${src}`);
-        audio.volume = 0.5;
-        audio.play();
-    } catch (e) {
-        console.warn("Audio playback failed:", e);
-    }
+// Make sure you have a folder named "sounds" in the same directory as your index.html
+// Put "buttonclick.mp3" and "paying.mp3" inside that folder.
+
+let clickSound = new Audio('sounds/buttonclick.mp3');
+clickSound.volume = 0.3; // Lower volume so it's not deafening on rapid clicks
+
+let paySound = new Audio('sounds/paying.mp3');
+paySound.volume = 0.5;
+
+function playClick() {
+    // Reset the audio to the beginning so rapid clicks play a fresh sound each time
+    clickSound.currentTime = 0; 
+    clickSound.play().catch(e => console.warn("Audio play blocked until user interacts."));
+}
+
+function playPay() {
+    paySound.currentTime = 0;
+    paySound.play().catch(e => console.warn("Audio play blocked until user interacts."));
 }
 
 // --- GAME STATE ---
@@ -100,7 +106,8 @@ function toggleSwitch(isAuto = false) {
     let boltEl = document.getElementById('lightning-bolt');
     
     if (state.isOn) {
-        // Play Sound Here: playSound('switch_on.mp3');
+        // Play the clicking sound! (Only on manual clicks to save sanity)
+        if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
         rockerEl.style.background = "#ffdf00"; 
@@ -131,7 +138,7 @@ function toggleSwitch(isAuto = false) {
             createFloatingText(`+${formatNumber(power)} W`, isCrit);
         }
     } else {
-        // Play Sound Here: playSound('switch_off.mp3');
+        if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
         rockerEl.style.background = "#444"; 
@@ -142,6 +149,9 @@ function toggleSwitch(isAuto = false) {
 function buyUpgrade(key) {
     let cost = getCost(key);
     if (state.watts >= cost) {
+        // Play the paying sound!
+        playPay();
+        
         state.watts -= cost;
         state.upgrades[key].level++;
         updateUI();
