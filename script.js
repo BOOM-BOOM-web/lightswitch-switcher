@@ -1,222 +1,524 @@
-:root {
-    --bg-color: #425e8c; --bg-stripes: #375079; --panel-color: #000000;
-    --accent: #ffdf00; --text: #ffffff; --text-dim: #cccccc;
-    --danger: #ff3333; --safe: #33ff33;
+// --- SOUND SYSTEM ---
+let clickSound = document.getElementById('audio-click');
+let paySound = document.getElementById('audio-pay');
+let sirenSound = document.getElementById('audio-siren');
+let musicSound = document.getElementById('audio-music');
+let pageClickSound = document.getElementById('audio-pageclick');
+let jackpotSound = document.getElementById('audio-jackpot');
+let hoverSound = document.getElementById('audio-hover');
+
+if (clickSound) clickSound.volume = 0.3;
+if (paySound) paySound.volume = 1.0; 
+if (sirenSound) sirenSound.volume = 0.6;
+if (musicSound) musicSound.volume = 0.2; 
+if (pageClickSound) pageClickSound.volume = 0.6;
+if (jackpotSound) jackpotSound.volume = 0.8;
+if (hoverSound) hoverSound.volume = 0.4;
+
+function playClick() { if (!clickSound) return; try { clickSound.currentTime = 0; clickSound.play().catch(e=>{}); } catch(e){} }
+function playPay() { if (!paySound) return; try { paySound.currentTime = 0; paySound.play().catch(e=>{}); } catch(e){} }
+function playSiren() { if (!sirenSound) return; try { sirenSound.currentTime = 0; sirenSound.play().catch(e=>{}); } catch(e){} }
+function playPageClick() { if (!pageClickSound) return; try { pageClickSound.currentTime = 0; pageClickSound.play().catch(e=>{}); } catch(e){} }
+function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
+function playHover() { if (!hoverSound) return; try { hoverSound.currentTime = 0; hoverSound.play().catch(e=>{}); } catch(e){} }
+
+// Instantly plays explosion sound with zero delay
+function playExplosion() {
+    try {
+        let exp = new Audio('sounds/explosion.mp3');
+        exp.volume = 0.8;
+        exp.play().catch(e=>{});
+    } catch(e){}
 }
 
-body {
-    margin: 0; padding: 0; background-color: var(--bg-color);
-    background-image: repeating-linear-gradient(45deg, var(--bg-color), var(--bg-color) 20px, var(--bg-stripes) 20px, var(--bg-stripes) 40px);
-    color: var(--text); font-family: 'Press Start 2P', cursive;
-    height: 100vh; overflow: hidden; image-rendering: pixelated; -webkit-font-smoothing: none;
+function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
+document.body.addEventListener('click', startMusic, { once: true });
+
+// --- SWITCH MATERIAL TIERS ---
+const switchTiers = [
+    { name: "Basic", cost: 0, mult: 1, texture: "none", color: "#444" },
+    { name: "Copper", cost: 1000, mult: 3, texture: "textures/copper.jpeg", color: "#b87333" },
+    { name: "Iron", cost: 25000, mult: 10, texture: "textures/iron.jpeg", color: "#dddddd" },
+    { name: "Gold", cost: 500000, mult: 50, texture: "textures/gold.jpeg", color: "#ffd700" },
+    { name: "Diamond", cost: 10000000, mult: 250, texture: "none", color: "#00ffff" },
+    { name: "Dark Matter", cost: 250000000, mult: 1500, texture: "textures/darkmatter.jpeg", color: "#8a2be2" }
+];
+
+function applySwitchVisuals() {
+    let tier = switchTiers[state.switchTier];
+    let plate = document.getElementById('switch-plate');
+    let rocker = document.getElementById('switch-rocker');
+    if (tier.texture !== "none") {
+        plate.style.backgroundImage = `url('${tier.texture}')`;
+        rocker.style.backgroundImage = `url('${tier.texture}')`;
+        plate.style.backgroundColor = 'transparent'; rocker.style.backgroundColor = 'transparent';
+    } else {
+        plate.style.backgroundImage = 'none'; rocker.style.backgroundImage = 'none';
+        plate.style.backgroundColor = '#f0f0f0'; rocker.style.backgroundColor = tier.color;
+    }
 }
 
-/* Screen Shake for Explosion */
-body.shake {
-    animation: bigShake 0.5s ease-in-out;
-}
-@keyframes bigShake {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    20% { transform: translate(-10px, 10px) rotate(-2deg); }
-    40% { transform: translate(10px, -10px) rotate(2deg); }
-    60% { transform: translate(-10px, -10px) rotate(-1deg); }
-    80% { transform: translate(10px, 10px) rotate(1deg); }
-    100% { transform: translate(0, 0) rotate(0deg); }
-}
+// --- GAME STATE ---
+const state = {
+    watts: 0, totalWatts: 0, heat: 0, isOn: true, breakerTripped: false,
+    capacitors: 0, switchTier: 0, overdriveActive: false, lastDailyClaim: 0,
+    isRebirthing: false, endgameUnlocked: false,
+    upgrades: {
+        click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
+        voltage: { level: 0, baseCost: 5000, rate: 1.6, value: 5 },        
+        surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },
+        overcharge: { level: 0, baseCost: 20000, rate: 2.0, value: 5 },    
+        thermoGen: { level: 0, baseCost: 50000, rate: 1.8, value: 0.01 },  
+        servo: { level: 0, baseCost: 10000, rate: 1.7, value: 0.05 },      
+        cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },
+        liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },
+        thermal: { level: 0, baseCost: 800, rate: 1.4, value: 0.5 },
+        auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
+        quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
+        solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 },
+        // 10 New Items
+        flux: { level: 0, baseCost: 100000, rate: 1.9, value: 10 },
+        plasma: { level: 0, baseCost: 500000, rate: 1.85, value: 500 },
+        fusion: { level: 0, baseCost: 2000000, rate: 2.1, value: 3 },
+        antimatter: { level: 0, baseCost: 10000000, rate: 2.5, value: 0.05 },
+        entangler: { level: 0, baseCost: 50000000, rate: 3.0, value: 2 },
+        darkEnergy: { level: 0, baseCost: 200000000, rate: 2.2, value: 10000 },
+        singularity: { level: 0, baseCost: 1000000000, rate: 2.8, value: 100 },
+        neutronium: { level: 0, baseCost: 5000000000, rate: 2.0, value: 0.5 },
+        cryo: { level: 0, baseCost: 20000000000, rate: 1.9, value: 5.0 },
+        infinity: { level: 0, baseCost: 100000000000, rate: 2.5, value: 0.10 }
+    },
+    achievements: {
+        first_flick: { name: "First Flick", desc: "Generate your first Watt.", unlocked: false },
+        heat_50: { name: "Warm to the Touch", desc: "Reach 50% heat.", unlocked: false },
+        trip_1: { name: "Blackout", desc: "Trip the breaker for the first time.", unlocked: false },
+        auto_1: { name: "Automation", desc: "Buy your first Auto-Flicker AI.", unlocked: false },
+        total_1k: { name: "Tycoon", desc: "Reach 1,000 Total Watts.", unlocked: false },
+        total_1m: { name: "Millionaire", desc: "Reach 1,000,000 Total Watts.", unlocked: false },
+        prestige_1: { name: "Capacitor", desc: "Overload the grid for the first time.", unlocked: false }
+    },
+    endgame: {
+        titan: { name: "Titan", desc: "Reach 1 Trillion Total Watts.", mult: 2, completed: false },
+        cosmic: { name: "Cosmic", desc: "Reach 1 Quadrillion Total Watts.", mult: 5, completed: false },
+        infinity: { name: "Infinity", desc: "Reach 1 Quintillion Total Watts.", mult: 50, completed: false }
+    },
+    rebirthTree: {} 
+};
 
-#vignette {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; box-shadow: inset 0 0 200px rgba(0,0,0,0);
-    transition: box-shadow 0.2s; z-index: 999;
-}
-
-#elec-drop-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
-.elec-drop {
-    position: absolute; width: 30px; height: 30px; background: #00ffff;
-    border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
-    cursor: pointer; pointer-events: auto; animation: pulse 0.5s infinite alternate, fall 3s linear forwards;
-}
-.elec-drop.golden {
-    width: 50px; height: 50px; background: #ffd700; border-color: #fff;
-    box-shadow: 0 0 25px #ffd700, 0 0 50px #ffae00; animation: pulse 0.3s infinite alternate, fall 5s linear forwards;
-}
-@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
-@keyframes fall { from { top: -50px; } to { top: 110%; } }
-
-/* Multi-Layer Explosion */
-#explosion-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 2000; opacity: 0;
-}
-#explosion-overlay.active { opacity: 1; }
-
-#exp-flash {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 100%; height: 100%; background: #fff; opacity: 0;
-}
-#explosion-overlay.active #exp-flash {
-    animation: flash 0.4s ease-out forwards;
-}
-@keyframes flash {
-    0% { opacity: 1; }
-    100% { opacity: 0; }
-}
-
-#exp-core {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-    width: 300px; height: 300px; border-radius: 50%;
-    background: radial-gradient(circle, #fff 0%, #ffdf00 20%, #ff8c00 50%, #ff3333 80%, transparent 100%);
-    filter: blur(10px);
-}
-#explosion-overlay.active #exp-core {
-    animation: coreExpand 1.5s ease-out forwards;
-}
-@keyframes coreExpand {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    30% { transform: translate(-50%, -50%) scale(3); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(8); opacity: 0; }
+// --- REBIRTH TREE GENERATION ---
+const treeNodes = [];
+for(let i=0; i<100; i++) {
+    let tier = Math.floor(i / 10);
+    let reqs = [];
+    if (i % 10 !== 0) reqs.push(i - 1);
+    if (tier > 0) reqs.push(i - 10);
+    let cost = 1 + tier;
+    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); 
+    treeNodes.push({ id: i, tier, reqs, cost, effect });
 }
 
-#exp-shockwave {
-    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
-    width: 200px; height: 200px; border-radius: 50%;
-    border: 10px solid #fff; box-shadow: 0 0 50px #ffdf00;
-}
-#explosion-overlay.active #exp-shockwave {
-    animation: shockwave 1s ease-out forwards;
-}
-@keyframes shockwave {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 20px; }
-    100% { transform: translate(-50%, -50%) scale(15); opacity: 0; border-width: 1px; }
+function getTreeNodeColor(tier) {
+    const colors = ['#ffdf00', '#00ffff', '#ff3333', '#ff8c00', '#8a2be2', '#33ff33', '#ff00ff', '#00ff00', '#0000ff', '#ffffff'];
+    return colors[tier % colors.length];
 }
 
-.view {
-    display: none; flex-direction: column; align-items: center; justify-content: flex-start;
-    width: 100%; height: 100vh; padding: 40px 20px 20px 20px; box-sizing: border-box; overflow-y: auto;
-}
-.view.active { display: flex; }
-#view-game { justify-content: center; }
-
-#daily-reward-container { position: fixed; top: 20px; right: 20px; z-index: 1000; display: none; }
-#daily-reward-btn {
-    background: #00ffff; color: #000; border: 2px solid #fff; padding: 10px 15px;
-    font-family: 'Press Start 2P', cursive; font-size: 0.7rem; cursor: pointer;
-    box-shadow: 0 0 10px #00ffff; animation: pulse 1s infinite alternate;
-}
-#daily-reward-btn:hover { background: #fff; }
-
-#stats-container { text-align: center; margin-bottom: 30px; text-shadow: 2px 2px 0px #000; z-index: 2; }
-#watts-display { font-size: 2.5rem; color: var(--accent); margin-bottom: 10px; }
-#watts-per-sec { font-size: 1rem; color: var(--text-dim); }
-#capacitors-display { font-size: 0.8rem; color: #00ffff; margin-top: 10px; display: none; }
-
-#menu-buttons { display: flex; gap: 20px; margin-bottom: 40px; z-index: 2; }
-.menu-btn { background: #000; color: #fff; border: 2px solid #fff; padding: 10px 15px; font-family: 'Press Start 2P', cursive; font-size: 0.8rem; cursor: pointer; }
-.menu-btn:hover { background: #fff; color: #000; }
-
-#lightning-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 350px; height: 350px; z-index: 0; pointer-events: none; }
-#lightning-bolt { width: 100%; height: 100%; fill: var(--accent); opacity: 0.6; animation: spin 6s linear infinite, shine 1.5s ease-in-out infinite alternate; }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-@keyframes shine { 0% { filter: drop-shadow(0 0 10px rgba(255, 223, 0, 0.5)); opacity: 0.4; } 100% { filter: drop-shadow(0 0 30px rgba(255, 255, 0, 1)); opacity: 0.8; } }
-
-#switch-container { position: relative; width: 120px; height: 180px; cursor: pointer; z-index: 2; perspective: 200px; }
-#switch-plate {
-    position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 160px;
-    background: #f0f0f0; border: 4px solid #000; box-shadow: 6px 6px 0px #000;
-    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-    padding: 12px 0; box-sizing: border-box; border-radius: 4px; background-size: cover; background-position: center;
-}
-.screw { width: 10px; height: 10px; background: #b0b0b0; border: 2px solid #000; border-radius: 50%; position: relative; z-index: 3; }
-.screw::after { content: ''; position: absolute; top: 50%; left: 50%; width: 6px; height: 2px; background: #000; transform: translate(-50%, -50%) rotate(45deg); }
-#switch-rocker {
-    width: 50px; height: 80px; background: #444; border: 3px solid #000; border-radius: 4px;
-    transition: transform 0.1s ease-out, filter 0.1s, box-shadow 0.1s;
-    transform: perspective(150px) rotateX(25deg); box-shadow: 0 4px 4px rgba(0,0,0,0.4);
-    position: relative; background-size: cover; background-position: center; filter: brightness(0.6);
+function getRebirthMult() {
+    let mult = 1;
+    for(let id in state.rebirthTree) {
+        let node = treeNodes[id];
+        if (node) mult *= node.effect;
+    }
+    return mult;
 }
 
-#heat-container { width: 200px; height: 20px; background: #000; border: 2px solid #fff; margin-top: 40px; overflow: hidden; position: relative; z-index: 2; }
-#heat-bar { height: 100%; width: 0%; background: #ff3333; }
+function renderRebirthTree() {
+    const container = document.getElementById('rebirth-tree-container');
+    const svg = document.getElementById('tree-svg');
+    container.innerHTML = '';
+    svg.innerHTML = '';
+    document.getElementById('rebirth-caps-display').innerText = `Capacitors: ${state.capacitors}`;
 
-.float-text { position: absolute; font-size: 1rem; color: var(--accent); text-shadow: 2px 2px 0px #000; pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 10; }
-.float-text.crit { color: #ff00ff; font-size: 1.5rem; text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff; }
-.float-text.elec { color: #00ffff; font-size: 1.2rem; text-shadow: 2px 2px 0px #000; }
-@keyframes floatUp { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-80px) scale(1.2); opacity: 0; } }
-
-#breaker-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-#breaker-overlay h2 { color: var(--danger); font-size: 1.5rem; margin-bottom: 20px; text-align: center; }
-#reboot-bar { width: 200px; height: 20px; background: #333; margin-top: 15px; border: 2px solid #fff; overflow: hidden; }
-#reboot-fill { width: 0%; height: 100%; background: var(--accent); }
-
-#prestige-container { margin-top: 40px; text-align: center; padding: 20px; border: 2px solid #555; background: rgba(0,0,0,0.6); width: 260px; z-index: 2; }
-#prestige-info { font-size: 0.7rem; color: #00ffff; line-height: 1.8; margin-bottom: 15px; }
-#prestige-btn { width: 100%; padding: 12px; background: #000; color: #00ffff; border: 2px solid #00ffff; font-family: 'Press Start 2P', cursive; font-size: 0.8rem; cursor: pointer; }
-#prestige-btn:disabled { border-color: #555; color: #555; cursor: not-allowed; }
-#prestige-btn:hover:not(:disabled) { background: #00ffff; color: #000; }
-
-.page-container { background: rgba(0, 0, 0, 0.85); border: 4px solid #000; box-shadow: 6px 6px 0px #000; width: 90%; max-width: 600px; padding: 30px; box-sizing: border-box; }
-.page-title { font-size: 1.5rem; color: var(--accent); border-bottom: 4px solid #444; padding-bottom: 15px; margin-bottom: 25px; text-align: center; }
-.back-btn { background: transparent; border: none; color: var(--text-dim); font-family: 'Press Start 2P', cursive; font-size: 0.8rem; cursor: pointer; margin-bottom: 30px; text-decoration: underline; }
-.back-btn:hover { color: var(--accent); }
-
-.upgrade-card { background: #1a1a1a; padding: 15px; border: 2px solid #444; margin-bottom: 15px; cursor: pointer; transition: transform 0.1s ease, border-color 0.1s, background 0.1s; }
-.upgrade-card:hover { transform: scale(1.03); border-color: var(--accent); background: #222; }
-.upgrade-card.disabled { opacity: 0.5; cursor: not-allowed; }
-.upgrade-card.disabled:hover { transform: scale(1); }
-.upg-name { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9rem; }
-.upg-info { color: #aaa; font-size: 0.7rem; margin-bottom: 3px; }
-
-.achv-card { background: #1a1a1a; padding: 15px; border: 2px solid #444; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; transition: transform 0.1s ease, border-color 0.1s, background 0.1s; }
-.achv-card:hover { transform: scale(1.03); border-color: var(--accent); background: #222; }
-.achv-card.unlocked { border-color: var(--accent); background: #222; }
-.achv-icon { width: 40px; height: 40px; background: #333; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #555; }
-.achv-card.unlocked .achv-icon { background: var(--accent); color: #000; }
-.achv-text h3 { margin: 0 0 5px 0; font-size: 0.9rem; color: #fff; }
-.achv-card.unlocked .achv-text h3 { color: var(--accent); }
-.achv-text p { margin: 0; font-size: 0.7rem; color: #888; }
-
-/* Rebirth Tree Styles */
-#view-rebirth { background: #000; padding: 0; justify-content: center; align-items: center; position: relative; }
-#rebirth-header { position: fixed; top: 20px; left: 20px; z-index: 10; }
-#rebirth-header h2 { border: none; margin: 0; }
-#rebirth-caps-display { color: #00ffff; font-size: 0.8rem; margin-top: 10px; }
-
-#rebirth-tree-wrapper { position: relative; width: 1400px; height: 1400px; }
-#tree-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-.tree-line { stroke: #444; stroke-width: 2; stroke-dasharray: 5; }
-.tree-line.active { stroke: #ffdf00; stroke-width: 3; }
-
-#rebirth-tree-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; }
-.tree-node {
-    position: absolute; width: 40px; height: 40px; border-radius: 50%;
-    transform: translate(-50%, -50%); cursor: pointer; border: 2px solid #000;
-    display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #000;
-    transition: transform 0.1s; box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    treeNodes.forEach(node => {
+        let isPurchased = state.rebirthTree[node.id] !== undefined;
+        let isAvailable = node.reqs.every(reqId => state.rebirthTree[reqId] !== undefined);
+        
+        let div = document.createElement('div');
+        div.classList.add('tree-node');
+        div.style.left = `${(node.id % 10) * 120 + 60}px`;
+        div.style.top = `${Math.floor(node.id / 10) * 120 + 60}px`;
+        
+        if (isPurchased) {
+            div.classList.add('purchased');
+            div.style.backgroundColor = getTreeNodeColor(node.tier);
+        } else if (isAvailable) {
+            div.classList.add('available');
+            div.style.backgroundColor = getTreeNodeColor(node.tier);
+            div.onclick = () => buyTreeNode(node.id);
+        } else {
+            div.classList.add('locked');
+        }
+        
+        let tooltip = document.createElement('span');
+        tooltip.classList.add('tree-tooltip');
+        let effectText = node.id === 99 ? `x${node.effect} ALL` : `+${(node.effect - 1) * 100}% ALL`;
+        tooltip.innerText = `Node ${node.id + 1}\nCost: ${node.cost} Cap\nEffect: ${effectText}`;
+        div.appendChild(tooltip);
+        
+        container.appendChild(div);
+        
+        node.reqs.forEach(reqId => {
+            if (state.rebirthTree[reqId] !== undefined) {
+                let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                let p1x = (reqId % 10) * 120 + 60;
+                let p1y = Math.floor(reqId / 10) * 120 + 60;
+                let p2x = (node.id % 10) * 120 + 60;
+                let p2y = Math.floor(node.id / 10) * 120 + 60;
+                line.setAttribute('x1', p1x); line.setAttribute('y1', p1y);
+                line.setAttribute('x2', p2x); line.setAttribute('y2', p2y);
+                line.setAttribute('class', 'tree-line active');
+                svg.appendChild(line);
+            }
+        });
+    });
 }
-.tree-node:hover { transform: translate(-50%, -50%) scale(1.2); }
-.tree-node.locked { background: #222; border-color: #444; cursor: not-allowed; opacity: 0.3; }
-.tree-node.available { background: #444; border-color: #fff; animation: pulse 1s infinite alternate; }
-.tree-node.purchased { background: #ffdf00; border-color: #fff; box-shadow: 0 0 15px #ffdf00; }
 
-.tree-tooltip {
-    position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%);
-    background: #000; color: #fff; border: 1px solid #fff; padding: 5px;
-    font-size: 0.6rem; white-space: nowrap; display: none; z-index: 20;
+function buyTreeNode(id) {
+    let node = treeNodes[id];
+    if (state.rebirthTree[id] === undefined && state.capacitors >= node.cost) {
+        state.capacitors -= node.cost;
+        state.rebirthTree[id] = true;
+        playPay();
+        renderRebirthTree();
+        updateUI();
+    }
 }
-.tree-node:hover .tree-tooltip { display: block; }
 
-#rebirth-finish-btn {
-    position: fixed; bottom: 20px; right: 20px; padding: 15px 30px;
-    background: #00ffff; color: #000; border: 2px solid #fff; font-family: 'Press Start 2P', cursive;
-    font-size: 0.8rem; cursor: pointer; z-index: 10;
+function finishRebirth() {
+    playPageClick();
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-game').classList.add('active');
+    state.isRebirthing = false;
+    state.overdriveActive = true;
+    applySwitchVisuals();
+    updateUI();
+    createFloatingText(`OVERDRIVE ACTIVE!`, false, true);
+    setTimeout(() => { state.overdriveActive = false; }, 120000);
 }
-#rebirth-finish-btn:hover { background: #fff; }
 
-/* Endgame Styles */
-.endgame-card { background: #1a1a1a; padding: 15px; border: 2px solid #444; margin-bottom: 15px; display: flex; align-items: center; gap: 15px; }
-.endgame-card.completed { border-color: #00ffff; background: #001a1a; }
-.endgame-icon { width: 40px; height: 40px; background: #333; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: #555; }
-.endgame-card.completed .endgame-icon { background: #00ffff; color: #000; }
-.endgame-text h3 { margin: 0 0 5px 0; font-size: 0.9rem; color: #fff; }
-.endgame-card.completed .endgame-text h3 { color: #00ffff; }
-.endgame-text p { margin: 0; font-size: 0.7rem; color: #888; }
+// --- VIEW SYSTEM ---
+function switchView(viewId) {
+    if (state.isRebirthing) return; 
+    playPageClick();
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+    if(viewId === 'view-achvmt') renderAchievements();
+    if(viewId === 'view-endgame') renderEndgame();
+}
+
+// --- MATH FUNCTIONS ---
+function getCost(upgKey) { let upg = state.upgrades[upgKey]; return Math.ceil(upg.baseCost * Math.pow(upg.rate, upg.level)); }
+function getAchievementMult() { let count = 0; for (const key in state.achievements) { if (state.achievements[key].unlocked) count++; } return 1 + (count * 0.01); }
+function getEndgameMult() { let mult = 1; for (const key in state.endgame) { if (state.endgame[key].completed) mult *= state.endgame[key].mult; } return mult; }
+
+function getClickPower() {
+    let base = state.upgrades.click.value * (state.upgrades.click.level + 1);
+    let voltMult = 1 + (state.upgrades.voltage.level * state.upgrades.voltage.value); 
+    let fluxMult = 1 + (state.upgrades.flux.level * state.upgrades.flux.value);
+    let singularityMult = 1 + (state.upgrades.singularity.level * state.upgrades.singularity.value);
+    let thermoMult = 1 + (state.heat * state.upgrades.thermoGen.level * state.upgrades.thermoGen.value); 
+    let tierMult = switchTiers[state.switchTier].mult;
+    let prestigeMult = 1 + (state.capacitors * 0.1);
+    let achvMult = getAchievementMult();
+    let endgameMult = getEndgameMult();
+    let rebirthMult = getRebirthMult();
+    let entanglerMult = Math.pow(state.upgrades.entangler.value, state.upgrades.entangler.level);
+    let overdriveMult = state.overdriveActive ? 2 : 1;
+    
+    return base * voltMult * fluxMult * singularityMult * thermoMult * tierMult * prestigeMult * achvMult * endgameMult * rebirthMult * entanglerMult * overdriveMult;
+}
+
+function getCritChance() {
+    let base = state.upgrades.surge.level * state.upgrades.surge.value;
+    let antiMatter = state.upgrades.antimatter.level * state.upgrades.antimatter.value;
+    return Math.min(0.95, base + antiMatter);
+}
+
+function getCritMult() { return 10 + (state.upgrades.overcharge.level * state.upgrades.overcharge.value); }
+
+function getHeatPerClick() {
+    let baseHeat = 2; let reduction = Math.pow(0.9, state.upgrades.cooling.level);
+    let flatReduction = (state.upgrades.liquid.level * state.upgrades.liquid.value) + (state.upgrades.neutronium.level * state.upgrades.neutronium.value);
+    return Math.max(0, (baseHeat * reduction) - flatReduction);
+}
+
+function getHeatDecayPerSec() { return 0.5 + (state.upgrades.thermal.level * state.upgrades.thermal.value) + (state.upgrades.cryo.level * state.upgrades.cryo.value); }
+
+function getAutoPower() {
+    let autoBase = state.upgrades.auto.value * state.upgrades.auto.level;
+    let quantumMult = 1 + state.upgrades.quantum.level;
+    let fusionMult = 1 + (state.upgrades.fusion.level * state.upgrades.fusion.value);
+    let solarBase = state.upgrades.solar.value * state.upgrades.solar.level;
+    let plasmaBase = state.upgrades.plasma.value * state.upgrades.plasma.level;
+    let darkEnergyBase = state.upgrades.darkEnergy.value * state.upgrades.darkEnergy.level;
+    let tierMult = switchTiers[state.switchTier].mult;
+    let prestigeMult = 1 + (state.capacitors * 0.1);
+    let achvMult = getAchievementMult();
+    let endgameMult = getEndgameMult();
+    let rebirthMult = getRebirthMult();
+    let entanglerMult = Math.pow(state.upgrades.entangler.value, state.upgrades.entangler.level);
+    let overdriveMult = state.overdriveActive ? 2 : 1;
+    
+    let servoConversion = getClickPower() * ((state.upgrades.servo.level * state.upgrades.servo.value) + (state.upgrades.infinity.level * state.upgrades.infinity.value));
+    
+    return ((autoBase * quantumMult * fusionMult) + solarBase + plasmaBase + darkEnergyBase + servoConversion) * tierMult * prestigeMult * achvMult * endgameMult * rebirthMult * entanglerMult * overdriveMult;
+}
+
+function getPrestigeGain() { if (state.totalWatts < 1000000) return 0; return Math.floor(Math.sqrt(state.totalWatts / 1000000)); }
+
+// --- DAILY REWARD ---
+function checkDailyReward() {
+    const now = Date.now(); const twentyFourHours = 24 * 60 * 60 * 1000;
+    document.getElementById('daily-reward-container').style.display = (now - state.lastDailyClaim >= twentyFourHours) ? 'block' : 'none';
+}
+function claimDaily() {
+    state.lastDailyClaim = Date.now();
+    document.getElementById('daily-reward-container').style.display = 'none';
+    let reward = getAutoPower() * 7200; if (reward < 1000) reward = 1000;
+    state.watts += reward; state.totalWatts += reward; playJackpot();
+    createFloatingText(`DAILY BONUS: +${formatNumber(reward)} W`, false, true);
+}
+
+// --- ELECTRICITY DROPS ---
+function spawnElecDrop() {
+    if (state.breakerTripped || state.isRebirthing) return;
+    const drop = document.createElement('div'); drop.classList.add('elec-drop');
+    let isGolden = Math.random() < 0.10;
+    if (isGolden) { drop.classList.add('golden'); playJackpot(); }
+    drop.style.left = `${Math.random() * 90 + 5}%`;
+    drop.addEventListener('click', () => {
+        let bonus = isGolden ? getAutoPower() * 3600 : (getClickPower() * 10) + (getAutoPower() * 20);
+        state.watts += bonus; state.totalWatts += bonus; drop.remove(); playPay(); 
+        createFloatingText(`+${formatNumber(bonus)} W`, false, true);
+    });
+    document.getElementById('elec-drop-container').appendChild(drop);
+    setTimeout(() => { if (drop.parentNode) drop.remove(); }, isGolden ? 5000 : 3000);
+}
+
+// --- ACTIONS ---
+function toggleSwitch(isAuto = false) {
+    if (state.breakerTripped || state.isRebirthing) return;
+    state.isOn = !state.isOn;
+    let rockerEl = document.getElementById('switch-rocker'); let boltEl = document.getElementById('lightning-bolt');
+    if (state.isOn) {
+        if(!isAuto) playClick();
+        rockerEl.style.transform = "perspective(150px) rotateX(-25deg)"; rockerEl.style.filter = "brightness(1.3)"; 
+        let power = getClickPower();
+        let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
+        rockerEl.style.boxShadow = `0 0 ${glowIntensity}px ${glowIntensity/2}px rgba(255, 223, 0, 0.8)`;
+        boltEl.style.opacity = 0.9; setTimeout(() => boltEl.style.opacity = 0.6, 100);
+        if(!isAuto) {
+            let isCrit = Math.random() < getCritChance(); if (isCrit) power *= getCritMult(); 
+            state.watts += power; state.totalWatts += power; state.heat += getHeatPerClick();
+            if (state.heat >= 100) { state.heat = 100; tripBreaker(); }
+            createFloatingText(`+${formatNumber(power)} W`, isCrit);
+        }
+    } else {
+        if(!isAuto) playClick();
+        rockerEl.style.transform = "perspective(150px) rotateX(25deg)"; rockerEl.style.filter = "brightness(0.6)"; 
+        rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
+    }
+}
+
+function buyUpgrade(key) {
+    if (key === 'switchTier') {
+        let nextTier = state.switchTier + 1; if (nextTier >= switchTiers.length) return; 
+        let cost = switchTiers[nextTier].cost;
+        if (state.watts >= cost) { playPay(); state.watts -= cost; state.switchTier = nextTier; applySwitchVisuals(); updateUI(); }
+    } else {
+        let cost = getCost(key);
+        if (state.watts >= cost) { playPay(); state.watts -= cost; state.upgrades[key].level++; updateUI(); }
+    }
+}
+
+function tripBreaker() {
+    state.breakerTripped = true; state.heat = 0; playSiren();
+    document.getElementById('breaker-overlay').style.display = 'flex';
+    document.getElementById('lightning-bolt').style.opacity = 0; 
+    document.getElementById('switch-rocker').style.boxShadow = "none"; 
+    let rebootTime = 0;
+    const rebootInterval = setInterval(() => {
+        rebootTime += 100; let pct = (rebootTime / 5000) * 100;
+        document.getElementById('reboot-fill').style.width = `${pct}%`;
+        if (rebootTime >= 5000) {
+            clearInterval(rebootInterval);
+            document.getElementById('reboot-fill').style.width = '0%';
+            document.getElementById('breaker-overlay').style.display = 'none';
+            document.getElementById('lightning-bolt').style.opacity = 0.6; 
+            state.breakerTripped = false; state.isOn = false; toggleSwitch(true); 
+        }
+    }, 100);
+}
+
+// --- PRESTIGE / REBIRTH ---
+function doPrestige() {
+    let gain = getPrestigeGain(); if (gain < 1) return;
+    state.isRebirthing = true;
+    
+    // Trigger Explosion & Sound INSTANTLY
+    let overlay = document.getElementById('explosion-overlay');
+    overlay.classList.add('active');
+    document.body.classList.add('shake');
+    playExplosion();
+    
+    // Reset stats to 0 visually during the flash
+    state.watts = 0; state.totalWatts = 0; state.heat = 0; state.switchTier = 0; 
+    for (const key in state.upgrades) { state.upgrades[key].level = 0; }
+    updateUI(); 
+
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        document.body.classList.remove('shake');
+        state.capacitors += gain; // Apply capacitors after the flash
+        
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-rebirth').classList.add('active');
+        applySwitchVisuals(); renderRebirthTree(); updateUI();
+    }, 1500);
+}
+
+// --- ENDGAME ---
+function checkEndgame() {
+    let changed = false;
+    if (state.switchTier >= 5 && !state.endgameUnlocked) {
+        state.endgameUnlocked = true;
+        document.getElementById('endgame-btn').style.display = 'block';
+    }
+    if (state.totalWatts >= 1e12 && !state.endgame.titan.completed) { state.endgame.titan.completed = true; changed = true; }
+    if (state.totalWatts >= 1e15 && !state.endgame.cosmic.completed) { state.endgame.cosmic.completed = true; changed = true; }
+    if (state.totalWatts >= 1e18 && !state.endgame.infinity.completed) { state.endgame.infinity.completed = true; changed = true; }
+
+    if (changed && document.getElementById('view-endgame').classList.contains('active')) renderEndgame();
+}
+
+function renderEndgame() {
+    const listEl = document.getElementById('endgame-list');
+    listEl.innerHTML = '';
+    for (const key in state.endgame) {
+        let c = state.endgame[key];
+        let card = document.createElement('div'); card.classList.add('endgame-card');
+        if (c.completed) card.classList.add('completed');
+        let icon = c.completed ? '★' : '?';
+        card.innerHTML = `<div class="endgame-icon">${icon}</div><div class="endgame-text"><h3>${c.name}</h3><p>${c.desc} (Reward: x${c.mult} Prod)</p></div>`;
+        listEl.appendChild(card);
+    }
+}
+
+// --- ACHIEVEMENTS ---
+function checkAchievements() {
+    let unlocked = false; let a = state.achievements;
+    if (state.totalWatts >= 1 && !a.first_flick.unlocked) { a.first_flick.unlocked = true; unlocked = true; }
+    if (state.heat >= 50 && !a.heat_50.unlocked) { a.heat_50.unlocked = true; unlocked = true; }
+    if (state.breakerTripped && !a.trip_1.unlocked) { a.trip_1.unlocked = true; unlocked = true; }
+    if (state.upgrades.auto.level >= 1 && !a.auto_1.unlocked) { a.auto_1.unlocked = true; unlocked = true; }
+    if (state.totalWatts >= 1000 && !a.total_1k.unlocked) { a.total_1k.unlocked = true; unlocked = true; }
+    if (state.totalWatts >= 1000000 && !a.total_1m.unlocked) { a.total_1m.unlocked = true; unlocked = true; }
+    if (state.capacitors >= 1 && !a.prestige_1.unlocked) { a.prestige_1.unlocked = true; unlocked = true; }
+    if (unlocked && document.getElementById('view-achvmt').classList.contains('active')) renderAchievements();
+}
+
+function renderAchievements() {
+    const listEl = document.getElementById('achv-list'); listEl.innerHTML = '';
+    for (const key in state.achievements) {
+        let achv = state.achievements[key];
+        let card = document.createElement('div'); card.classList.add('achv-card');
+        if (achv.unlocked) card.classList.add('unlocked');
+        card.onmouseenter = playHover;
+        let icon = achv.unlocked ? '★' : '?';
+        card.innerHTML = `<div class="achv-icon">${icon}</div><div class="achv-text"><h3>${achv.name}</h3><p>${achv.desc}</p></div>`;
+        listEl.appendChild(card);
+    }
+}
+
+// --- UI UPDATES ---
+function formatNumber(num) {
+    if (num < 1000) return num.toFixed(0);
+    const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+    const tier = Math.floor(Math.log10(num) / 3);
+    const scaled = num / Math.pow(10, tier * 3);
+    return scaled.toFixed(2) + suffixes[tier];
+}
+
+function createFloatingText(text, isCrit = false, isElec = false) {
+    const el = document.createElement('div'); el.classList.add('float-text');
+    if (isCrit) el.classList.add('crit'); if (isElec) el.classList.add('elec');
+    el.innerText = text; el.style.left = `${Math.random() * 60 - 30}px`;
+    document.getElementById('float-container').appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+function updateUI() {
+    document.getElementById('watts-display').innerText = `${formatNumber(state.watts)} W`;
+    document.getElementById('watts-per-sec').innerText = `per second: ${formatNumber(getAutoPower())}${state.overdriveActive ? ' (OVERDRIVE)' : ''}`;
+    document.getElementById('capacitors-display').innerText = `${state.capacitors} Capacitors`;
+    document.getElementById('prestige-bonus').innerText = `${state.capacitors * 10}%`;
+    
+    document.getElementById('heat-bar').style.width = `${state.heat}%`;
+    let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
+    document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
+
+    let nextTier = state.switchTier + 1;
+    let tierNameEl = document.getElementById('switchTier-name'); let tierCostEl = document.getElementById('switchTier-cost');
+    let tierCard = document.querySelector(`.upgrade-card[onclick="buyUpgrade('switchTier')"]`);
+
+    if (nextTier < switchTiers.length) {
+        if(tierNameEl) tierNameEl.innerText = switchTiers[nextTier].name;
+        if(tierCostEl) tierCostEl.innerText = formatNumber(switchTiers[nextTier].cost);
+        if(tierCard) { if (state.watts >= switchTiers[nextTier].cost) tierCard.classList.remove('disabled'); else tierCard.classList.add('disabled'); }
+    } else {
+        if(tierNameEl) tierNameEl.innerText = "MAX";
+        if(tierCostEl) tierCostEl.innerText = "---";
+        if(tierCard) { tierCard.classList.add('disabled'); tierCard.style.opacity = "0.5"; }
+    }
+
+    for (const key in state.upgrades) {
+        let cost = getCost(key);
+        let levelEl = document.getElementById(`${key}-level`); let costEl = document.getElementById(`${key}-cost`);
+        let card = document.querySelector(`.upgrade-card[onclick="buyUpgrade('${key}')"]`);
+        if (levelEl) levelEl.innerText = state.upgrades[key].level;
+        if (costEl) costEl.innerText = formatNumber(cost);
+        if (card) { if (state.watts >= cost) card.classList.remove('disabled'); else card.classList.add('disabled'); }
+    }
+
+    let pGain = getPrestigeGain();
+    document.getElementById('prestige-gain').innerText = pGain;
+    let pBtn = document.getElementById('prestige-btn');
+    if (pGain >= 1) { pBtn.disabled = false; pBtn.innerText = `OVERLOAD (+${pGain})`; } 
+    else { pBtn.disabled = true; pBtn.innerText = `OVERLOAD`; }
+
+    checkAchievements();
+    checkEndgame();
+    checkDailyReward();
+}
+
+// --- GAME LOOP ---
+setInterval(() => {
+    if (state.breakerTripped || state.isRebirthing) return;
+    state.heat = Math.max(0, state.heat - (getHeatDecayPerSec() * 0.1));
+    let autoWps = getAutoPower();
+    if (autoWps > 0) {
+        state.watts += autoWps * 0.1; state.totalWatts += autoWps * 0.1;
+        let autoHeatGen = (state.upgrades.auto.value * state.upgrades.auto.level) * 0.05; 
+        state.heat += autoHeatGen * 0.1; 
+        if (state.heat >= 100) tripBreaker();
+    }
+    updateUI();
+}, 100);
+
+setInterval(() => { if (Math.random() < 0.25) spawnElecDrop(); }, 15000);
+
+// Init
+applySwitchVisuals(); 
+toggleSwitch(true); 
+updateUI();
+SaveManager.load();
+SaveManager.initSaveLoop();
