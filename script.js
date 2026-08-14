@@ -1,3 +1,4 @@
+// --- SOUND SYSTEM ---
 let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
@@ -5,6 +6,7 @@ let musicSound = document.getElementById('audio-music');
 let pageClickSound = document.getElementById('audio-pageclick');
 let jackpotSound = document.getElementById('audio-jackpot');
 let hoverSound = document.getElementById('audio-hover');
+let explosionSound = document.getElementById('audio-explosion');
 
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 1.0; 
@@ -13,6 +15,7 @@ if (musicSound) musicSound.volume = 0.2;
 if (pageClickSound) pageClickSound.volume = 0.6;
 if (jackpotSound) jackpotSound.volume = 0.8;
 if (hoverSound) hoverSound.volume = 0.4;
+if (explosionSound) explosionSound.volume = 0.8;
 
 function playClick() { if (!clickSound) return; try { clickSound.currentTime = 0; clickSound.play().catch(e=>{}); } catch(e){} }
 function playPay() { if (!paySound) return; try { paySound.currentTime = 0; paySound.play().catch(e=>{}); } catch(e){} }
@@ -20,18 +23,12 @@ function playSiren() { if (!sirenSound) return; try { sirenSound.currentTime = 0
 function playPageClick() { if (!pageClickSound) return; try { pageClickSound.currentTime = 0; pageClickSound.play().catch(e=>{}); } catch(e){} }
 function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
 function playHover() { if (!hoverSound) return; try { hoverSound.currentTime = 0; hoverSound.play().catch(e=>{}); } catch(e){} }
-
-function playExplosion() {
-    try {
-        let exp = new Audio('sounds/explosion.mp3');
-        exp.volume = 0.8;
-        exp.play().catch(e=>{});
-    } catch(e){}
-}
+function playExplosion() { if (!explosionSound) return; try { explosionSound.currentTime = 0; explosionSound.play().catch(e=>{}); } catch(e){} }
 
 function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
 document.body.addEventListener('click', startMusic, { once: true });
 
+// --- SWITCH MATERIAL TIERS ---
 const switchTiers = [
     { name: "Basic", cost: 0, mult: 1, texture: "none", color: "#444" },
     { name: "Copper", cost: 1000, mult: 3, texture: "textures/copper.jpeg", color: "#b87333" },
@@ -55,6 +52,7 @@ function applySwitchVisuals() {
     }
 }
 
+// --- GAME STATE ---
 const state = {
     watts: 0, totalWatts: 0, heat: 0, isOn: true, breakerTripped: false,
     capacitors: 0, switchTier: 0, overdriveActive: false, lastDailyClaim: 0,
@@ -72,6 +70,7 @@ const state = {
         auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
         quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
         solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 },
+        // 10 New Items
         flux: { level: 0, baseCost: 100000, rate: 1.9, value: 10 },
         plasma: { level: 0, baseCost: 500000, rate: 1.85, value: 500 },
         fusion: { level: 0, baseCost: 2000000, rate: 2.1, value: 3 },
@@ -97,17 +96,23 @@ const state = {
         cosmic: { name: "Cosmic", desc: "Reach 1 Quadrillion Total Watts.", mult: 5, completed: false },
         infinity: { name: "Infinity", desc: "Reach 1 Quintillion Total Watts.", mult: 50, completed: false }
     },
-    rebirthTree: {} 
+    rebirthTree: {} // Holds purchased tree node IDs
 };
 
+// --- REBIRTH TREE GENERATION ---
+// Generates a 10x10 grid (100 nodes) with dependencies
 const treeNodes = [];
 for(let i=0; i<100; i++) {
     let tier = Math.floor(i / 10);
     let reqs = [];
+    // Require previous node in same row
     if (i % 10 !== 0) reqs.push(i - 1);
+    // Require node above (if not first row)
     if (tier > 0) reqs.push(i - 10);
+    
     let cost = 1 + tier;
-    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); 
+    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); // Final node x1000, others small %
+    
     treeNodes.push({ id: i, tier, reqs, cost, effect });
 }
 
@@ -160,6 +165,7 @@ function renderRebirthTree() {
         
         container.appendChild(div);
         
+        // Draw lines
         node.reqs.forEach(reqId => {
             if (state.rebirthTree[reqId] !== undefined) {
                 let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -199,8 +205,9 @@ function finishRebirth() {
     setTimeout(() => { state.overdriveActive = false; }, 120000);
 }
 
+// --- VIEW SYSTEM ---
 function switchView(viewId) {
-    if (state.isRebirthing) return; 
+    if (state.isRebirthing) return; // Lock navigation during rebirth
     playPageClick();
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
@@ -208,6 +215,7 @@ function switchView(viewId) {
     if(viewId === 'view-endgame') renderEndgame();
 }
 
+// --- MATH FUNCTIONS ---
 function getCost(upgKey) { let upg = state.upgrades[upgKey]; return Math.ceil(upg.baseCost * Math.pow(upg.rate, upg.level)); }
 function getAchievementMult() { let count = 0; for (const key in state.achievements) { if (state.achievements[key].unlocked) count++; } return 1 + (count * 0.01); }
 function getEndgameMult() { let mult = 1; for (const key in state.endgame) { if (state.endgame[key].completed) mult *= state.endgame[key].mult; } return mult; }
@@ -267,6 +275,7 @@ function getAutoPower() {
 
 function getPrestigeGain() { if (state.totalWatts < 1000000) return 0; return Math.floor(Math.sqrt(state.totalWatts / 1000000)); }
 
+// --- DAILY REWARD ---
 function checkDailyReward() {
     const now = Date.now(); const twentyFourHours = 24 * 60 * 60 * 1000;
     document.getElementById('daily-reward-container').style.display = (now - state.lastDailyClaim >= twentyFourHours) ? 'block' : 'none';
@@ -279,6 +288,7 @@ function claimDaily() {
     createFloatingText(`DAILY BONUS: +${formatNumber(reward)} W`, false, true);
 }
 
+// --- ELECTRICITY DROPS ---
 function spawnElecDrop() {
     if (state.breakerTripped || state.isRebirthing) return;
     const drop = document.createElement('div'); drop.classList.add('elec-drop');
@@ -294,6 +304,7 @@ function spawnElecDrop() {
     setTimeout(() => { if (drop.parentNode) drop.remove(); }, isGolden ? 5000 : 3000);
 }
 
+// --- ACTIONS ---
 function toggleSwitch(isAuto = false) {
     if (state.breakerTripped || state.isRebirthing) return;
     state.isOn = !state.isOn;
@@ -348,30 +359,28 @@ function tripBreaker() {
     }, 100);
 }
 
+// --- PRESTIGE / REBIRTH ---
 function doPrestige() {
     let gain = getPrestigeGain(); if (gain < 1) return;
     state.isRebirthing = true;
-    
-    let overlay = document.getElementById('explosion-overlay');
-    overlay.classList.add('active');
-    document.body.classList.add('shake');
-    playExplosion();
-    
+    state.capacitors += gain;
     state.watts = 0; state.totalWatts = 0; state.heat = 0; state.switchTier = 0; 
+    
     for (const key in state.upgrades) { state.upgrades[key].level = 0; }
-    updateUI(); 
-
+    
+    // Trigger Explosion
+    let overlay = document.getElementById('explosion-overlay');
+    overlay.classList.add('active'); playExplosion();
+    
     setTimeout(() => {
         overlay.classList.remove('active');
-        document.body.classList.remove('shake');
-        state.capacitors += gain; 
-        
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-rebirth').classList.add('active');
         applySwitchVisuals(); renderRebirthTree(); updateUI();
-    }, 1500);
+    }, 2000);
 }
 
+// --- ENDGAME ---
 function checkEndgame() {
     let changed = false;
     if (state.switchTier >= 5 && !state.endgameUnlocked) {
@@ -398,6 +407,7 @@ function renderEndgame() {
     }
 }
 
+// --- ACHIEVEMENTS ---
 function checkAchievements() {
     let unlocked = false; let a = state.achievements;
     if (state.totalWatts >= 1 && !a.first_flick.unlocked) { a.first_flick.unlocked = true; unlocked = true; }
@@ -423,6 +433,7 @@ function renderAchievements() {
     }
 }
 
+// --- UI UPDATES ---
 function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
@@ -483,6 +494,7 @@ function updateUI() {
     checkDailyReward();
 }
 
+// --- GAME LOOP ---
 setInterval(() => {
     if (state.breakerTripped || state.isRebirthing) return;
     state.heat = Math.max(0, state.heat - (getHeatDecayPerSec() * 0.1));
@@ -498,6 +510,7 @@ setInterval(() => {
 
 setInterval(() => { if (Math.random() < 0.25) spawnElecDrop(); }, 15000);
 
+// Init
 applySwitchVisuals(); 
 toggleSwitch(true); 
 updateUI();
