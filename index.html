@@ -13,6 +13,7 @@
 
     <div id="vignette"></div>
     <div id="elec-drop-container"></div>
+    <div id="explosion-overlay"></div>
 
     <!-- Daily Reward Button -->
     <div id="daily-reward-container">
@@ -30,6 +31,7 @@
         <div id="menu-buttons">
             <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
             <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
+            <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
         </div>
 
         <div id="lightning-container">
@@ -79,97 +81,120 @@
                 <div class="upg-info">Upgrade switch material for massive multipliers!</div>
             </div>
 
+            <!-- Original Upgrades -->
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('click')">
                 <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
                 <div class="upg-info">Cost: <span id="click-cost">10</span> W</div>
                 <div class="upg-info">Doubles manual click W</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('voltage')">
                 <div class="upg-name">- High Voltage Coil <span id="voltage-level">0</span></div>
                 <div class="upg-info">Cost: <span id="voltage-cost">5,000</span> W</div>
                 <div class="upg-info">+5x Flat Multiplier to Click Power</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('surge')">
                 <div class="upg-name">- Surge Protector <span id="surge-level">0</span></div>
                 <div class="upg-info">Cost: <span id="surge-cost">500</span> W</div>
                 <div class="upg-info">+1% Crit Chance (10x W per click)</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('overcharge')">
                 <div class="upg-name">- Overcharge Capacitor <span id="overcharge-level">0</span></div>
                 <div class="upg-info">Cost: <span id="overcharge-cost">20,000</span> W</div>
                 <div class="upg-info">+5x Crit Multiplier (Base is 10x)</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('thermoGen')">
                 <div class="upg-name">- Thermal Generator <span id="thermoGen-level">0</span></div>
                 <div class="upg-info">Cost: <span id="thermoGen-cost">50,000</span> W</div>
-                <div class="upg-info">Click Power increases with Heat (Risk/Reward!)</div>
+                <div class="upg-info">Click Power increases with Heat</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('servo')">
                 <div class="upg-name">- Servo Motor <span id="servo-level">0</span></div>
                 <div class="upg-info">Cost: <span id="servo-cost">10,000</span> W</div>
                 <div class="upg-info">Converts 5% of Click Power into Passive W/s</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('cooling')">
                 <div class="upg-name">- Cooling Fan <span id="cooling-level">0</span></div>
                 <div class="upg-info">Cost: <span id="cooling-cost">100</span> W</div>
                 <div class="upg-info">-10% heat generation per click</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('liquid')">
                 <div class="upg-name">- Liquid Cooling <span id="liquid-level">0</span></div>
                 <div class="upg-info">Cost: <span id="liquid-cost">2000</span> W</div>
                 <div class="upg-info">-0.2 Flat heat per click</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('thermal')">
                 <div class="upg-name">- Thermal Paste <span id="thermal-level">0</span></div>
                 <div class="upg-info">Cost: <span id="thermal-cost">800</span> W</div>
                 <div class="upg-info">+0.5 Heat decay per second</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('auto')">
                 <div class="upg-name">- Auto-Flicker AI <span id="auto-level">0</span></div>
                 <div class="upg-info">Cost: <span id="auto-cost">50</span> W</div>
                 <div class="upg-info">+2 Passive W/s</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('quantum')">
                 <div class="upg-name">- Quantum Processor <span id="quantum-level">0</span></div>
                 <div class="upg-info">Cost: <span id="quantum-cost">5000</span> W</div>
                 <div class="upg-info">x2 Auto-Flicker AI output</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('solar')">
                 <div class="upg-name">- Solar Panel <span id="solar-level">0</span></div>
                 <div class="upg-info">Cost: <span id="solar-cost">1000</span> W</div>
                 <div class="upg-info">+50 Passive W/s (Generates no heat)</div>
             </div>
 
-            <!-- PRESTIGE SKILL TREE -->
-            <h2 class="page-title" style="margin-top:40px; border-top: 4px solid #444; padding-top: 20px;">GRID UPGRADES (Capacitors)</h2>
-            
-            <div class="upgrade-card prestige-upg" onmouseenter="playHover()" onclick="buyPrestigeUpgrade('capacitorBoost')">
-                <div class="upg-name">- Overclocked Capacitors <span id="capacitorBoost-level">0</span></div>
-                <div class="upg-info">Cost: <span id="capacitorBoost-cost">1</span> Capacitors</div>
-                <div class="upg-info">+10% to all Watts production per level</div>
-            </div>
+            <!-- 10 NEW SHOP ITEMS -->
+            <h2 class="page-title" style="margin-top:40px; border-top: 4px solid #444; padding-top: 20px;">ADVANCED TECH</h2>
 
-            <div class="upgrade-card prestige-upg" onmouseenter="playHover()" onclick="buyPrestigeUpgrade('autoStart')">
-                <div class="upg-name">- AI Bootloader <span id="autoStart-level">0</span></div>
-                <div class="upg-info">Cost: <span id="autoStart-cost">3</span> Capacitors</div>
-                <div class="upg-info">Start with 5 free Auto-Flickers after Overload</div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('flux')">
+                <div class="upg-name">- Flux Capacitor <span id="flux-level">0</span></div>
+                <div class="upg-info">Cost: <span id="flux-cost">100,000</span> W</div>
+                <div class="upg-info">+10x Flat Multiplier to Click Power</div>
             </div>
-
-            <div class="upgrade-card prestige-upg" onmouseenter="playHover()" onclick="buyPrestigeUpgrade('baseCrit')">
-                <div class="upg-name">- Lucky Wiring <span id="baseCrit-level">0</span></div>
-                <div class="upg-info">Cost: <span id="baseCrit-cost">5</span> Capacitors</div>
-                <div class="upg-info">+2% Base Crit Chance per level</div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('plasma')">
+                <div class="upg-name">- Plasma Grid <span id="plasma-level">0</span></div>
+                <div class="upg-info">Cost: <span id="plasma-cost">500,000</span> W</div>
+                <div class="upg-info">+500 Passive W/s</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('fusion')">
+                <div class="upg-name">- Fusion Core <span id="fusion-level">0</span></div>
+                <div class="upg-info">Cost: <span id="fusion-cost">2,000,000</span> W</div>
+                <div class="upg-info">x3 Auto-Flicker AI output</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('antimatter')">
+                <div class="upg-name">- Antimatter Drive <span id="antimatter-level">0</span></div>
+                <div class="upg-info">Cost: <span id="antimatter-cost">10,000,000</span> W</div>
+                <div class="upg-info">+5% Crit Chance</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('entangler')">
+                <div class="upg-name">- Quantum Entangler <span id="entangler-level">0</span></div>
+                <div class="upg-info">Cost: <span id="entangler-cost">50,000,000</span> W</div>
+                <div class="upg-info">x2 to ALL production</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('darkEnergy')">
+                <div class="upg-name">- Dark Energy Cell <span id="darkEnergy-level">0</span></div>
+                <div class="upg-info">Cost: <span id="darkEnergy-cost">200,000,000</span> W</div>
+                <div class="upg-info">+10,000 Passive W/s</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('singularity')">
+                <div class="upg-name">- Singularity Engine <span id="singularity-level">0</span></div>
+                <div class="upg-info">Cost: <span id="singularity-cost">1,000,000,000</span> W</div>
+                <div class="upg-info">+100x Flat Multiplier to Click Power</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('neutronium')">
+                <div class="upg-name">- Neutronium Casing <span id="neutronium-level">0</span></div>
+                <div class="upg-info">Cost: <span id="neutronium-cost">5,000,000,000</span> W</div>
+                <div class="upg-info">-0.5 Flat heat per click</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('cryo')">
+                <div class="upg-name">- Cryo Reactor <span id="cryo-level">0</span></div>
+                <div class="upg-info">Cost: <span id="cryo-cost">20,000,000,000</span> W</div>
+                <div class="upg-info">+5.0 Heat decay per second</div>
+            </div>
+            <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('infinity')">
+                <div class="upg-name">- Infinity Coil <span id="infinity-level">0</span></div>
+                <div class="upg-info">Cost: <span id="infinity-cost">100,000,000,000</span> W</div>
+                <div class="upg-info">Converts 10% of Click Power into Passive W/s</div>
             </div>
         </div>
     </div>
@@ -184,6 +209,29 @@
         </div>
     </div>
 
+    <!-- ================= VIEW: ENDGAME ================= -->
+    <div id="view-endgame" class="view">
+        <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
+        <div class="page-container">
+            <h2 class="page-title">COSMIC CHALLENGES</h2>
+            <p style="font-size: 0.7rem; color: #00ffff; text-align: center; margin-bottom: 20px;">Endgame goals for massive permanent bonuses!</p>
+            <div id="endgame-list"></div>
+        </div>
+    </div>
+
+    <!-- ================= VIEW: REBIRTH TREE ================= -->
+    <div id="view-rebirth" class="view">
+        <div id="rebirth-header">
+            <h2 class="page-title">REBIRTH MATRIX</h2>
+            <p id="rebirth-caps-display">Capacitors: 0</p>
+        </div>
+        <div id="rebirth-tree-wrapper">
+            <svg id="tree-svg"></svg>
+            <div id="rebirth-tree-container"></div>
+        </div>
+        <button id="rebirth-finish-btn" onclick="finishRebirth()">RETURN TO GRID</button>
+    </div>
+
     <!-- Hidden Audio Elements -->
     <audio id="audio-click" src="sounds/buttonclick.mp3" preload="auto"></audio>
     <audio id="audio-pay" src="sounds/paying.mp3" preload="auto"></audio>
@@ -191,8 +239,8 @@
     <audio id="audio-music" src="sounds/gamemusic.mp3" loop preload="auto"></audio>
     <audio id="audio-pageclick" src="sounds/pageclick.mp3" preload="auto"></audio>
     <audio id="audio-jackpot" src="sounds/jackpot.mp3" preload="auto"></audio>
-    <!-- NEW: Hover Sound -->
     <audio id="audio-hover" src="sounds/hoversound.mp3" preload="auto"></audio>
+    <audio id="audio-explosion" src="sounds/explosion.mp3" preload="auto"></audio>
 
     <script src="save.js"></script>
     <script src="script.js"></script>
