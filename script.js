@@ -1,6 +1,6 @@
 // --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v2',
+    key: 'flipTheSwitch_v3', // Changed to v3 to completely ignore broken old saves
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
@@ -20,7 +20,6 @@ const SaveManager = {
             state.breakerTripped = false;
             state.isRebirthing = false;
 
-            // Re-apply switch textures and toggle state after loading save
             applySwitchVisuals();
             let rockerEl = document.getElementById('switch-rocker');
             if (state.isOn) {
@@ -93,6 +92,15 @@ const SaveManager = {
         window.addEventListener('beforeunload', () => this.save());
     }
 };
+
+function resetSave() {
+    if (confirm("Are you sure you want to wipe ALL save data? This cannot be undone.")) {
+        localStorage.removeItem('flipTheSwitch_v3');
+        localStorage.removeItem('flipTheSwitch_v2');
+        localStorage.removeItem('flipTheSwitchSave');
+        location.reload();
+    }
+}
 
 // --- SOUND SYSTEM ---
 let clickSound = document.getElementById('audio-click');
