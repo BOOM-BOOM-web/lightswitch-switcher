@@ -1,33 +1,28 @@
 // --- SOUND SYSTEM ---
+let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
+let musicSound = document.getElementById('audio-music');
 
-if (paySound) paySound.volume = 0.8;
+// Set volumes
+if (clickSound) clickSound.volume = 0.3;
+if (paySound) paySound.volume = 1.0; // Turned up as requested previously
 if (sirenSound) sirenSound.volume = 0.6;
-
-// Placeholders for Switch Material Sounds
-// Files needed later: click_tier0.mp3, click_tier1.mp3, ... click_tier5.mp3
-const clickSounds = [
-    new Audio('buttonclick.mp3'),
-    new Audio('sounds/click_tier1.mp3'),
-    new Audio('sounds/click_tier2.mp3'),
-    new Audio('sounds/click_tier3.mp3'),
-    new Audio('sounds/click_tier4.mp3'),
-    new Audio('sounds/click_tier5.mp3')
-];
-clickSounds.forEach(s => s.volume = 0.3);
+if (musicSound) musicSound.volume = 0.2; // Background music should be quiet
 
 function playClick() {
+    if (!clickSound) return;
     try {
-        let s = clickSounds[state.switchTier] || clickSounds[0];
-        s.currentTime = 0; 
-        let playPromise = s.play();
+        clickSound.currentTime = 0; 
+        let playPromise = clickSound.play();
         if (playPromise !== undefined) {
             playPromise.catch(e => {
-                // Silently fail if placeholder file is missing
+                console.error("Click Sound Error: " + e.message);
             });
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Audio system error:", e);
+    }
 }
 
 function playPay() {
@@ -36,9 +31,13 @@ function playPay() {
         paySound.currentTime = 0;
         let playPromise = paySound.play();
         if (playPromise !== undefined) {
-            playPromise.catch(e => console.error("Pay Sound Error: " + e.message));
+            playPromise.catch(e => {
+                console.error("Pay Sound Error: " + e.message);
+            });
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Audio system error:", e);
+    }
 }
 
 function playSiren() {
@@ -47,10 +46,23 @@ function playSiren() {
         sirenSound.currentTime = 0;
         let playPromise = sirenSound.play();
         if (playPromise !== undefined) {
-            playPromise.catch(e => console.error("Siren Sound Error: " + e.message));
+            playPromise.catch(e => {
+                console.error("Siren Sound Error: " + e.message);
+            });
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Audio system error:", e);
+    }
 }
+
+// Start music on first click (Browsers block auto-play otherwise)
+function startMusic() {
+    if (musicSound && musicSound.paused) {
+        musicSound.play().catch(e => console.warn("Music autoplay blocked until user clicks."));
+    }
+}
+// Listen for the very first click on the body to start the music
+document.body.addEventListener('click', startMusic, { once: true });
 
 // --- SWITCH MATERIAL TIERS ---
 const switchTiers = [
@@ -70,7 +82,7 @@ const state = {
     isOn: true,
     breakerTripped: false,
     capacitors: 0,
-    switchTier: 0, // NEW: Tracks current material tier
+    switchTier: 0, 
     upgrades: {
         click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
         surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },
@@ -148,27 +160,18 @@ function spawnElecDrop() {
     
     const drop = document.createElement('div');
     drop.classList.add('elec-drop');
-    
-    // Random horizontal position
     drop.style.left = `${Math.random() * 90 + 5}%`;
     
-    // Click handler
     drop.addEventListener('click', () => {
-        // Math: 10x click power + 20 seconds of auto power
         let bonus = (getClickPower() * 10) + (getAutoPower() * 20);
-        
         state.watts += bonus;
         state.totalWatts += bonus;
-        
         createFloatingText(`+${formatNumber(bonus)} W`, false, true);
-        drop.remove(); // Remove after clicking
-        
-        playPay(); // Reuse pay sound for collecting drop, or add a new one later
+        drop.remove(); 
+        playPay(); 
     });
     
     document.getElementById('elec-drop-container').appendChild(drop);
-    
-    // Despawn after 3 seconds if not clicked
     setTimeout(() => {
         if (drop.parentNode) drop.remove();
     }, 3000);
@@ -187,7 +190,7 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
-        rockerEl.style.background = switchTiers[state.switchTier].color; // Apply Tier Color
+        rockerEl.style.background = switchTiers[state.switchTier].color; 
         
         let power = getClickPower();
         let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
@@ -217,7 +220,6 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
-        // Keep the tier color, but remove the glow
         rockerEl.style.background = switchTiers[state.switchTier].color; 
         rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
     }
@@ -226,15 +228,13 @@ function toggleSwitch(isAuto = false) {
 function buyUpgrade(key) {
     if (key === 'switchTier') {
         let nextTier = state.switchTier + 1;
-        if (nextTier >= switchTiers.length) return; // Max tier reached
+        if (nextTier >= switchTiers.length) return; 
         
         let cost = switchTiers[nextTier].cost;
         if (state.watts >= cost) {
             playPay();
             state.watts -= cost;
             state.switchTier = nextTier;
-            
-            // Update switch visual immediately
             document.getElementById('switch-rocker').style.background = switchTiers[state.switchTier].color;
             updateUI();
         }
@@ -283,7 +283,7 @@ function doPrestige() {
     state.watts = 0;
     state.totalWatts = 0;
     state.heat = 0;
-    state.switchTier = 0; // Reset tier on prestige
+    state.switchTier = 0; 
     for (const key in state.upgrades) {
         state.upgrades[key].level = 0;
     }
@@ -380,7 +380,6 @@ function updateUI() {
             else tierCard.classList.add('disabled');
         }
     } else {
-        // Max tier reached
         if(tierNameEl) tierNameEl.innerText = "MAX";
         if(tierCostEl) tierCostEl.innerText = "---";
         if(tierCard) {
@@ -440,7 +439,6 @@ setInterval(() => {
 
 // --- ELECTRICITY DROP SPAWN LOOP ---
 setInterval(() => {
-    // 25% chance every 15 seconds to spawn a drop
     if (Math.random() < 0.25) {
         spawnElecDrop();
     }
