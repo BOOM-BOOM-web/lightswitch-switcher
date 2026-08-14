@@ -24,19 +24,38 @@ document.body.addEventListener('click', startMusic, { once: true });
 
 // --- SWITCH MATERIAL TIERS ---
 const switchTiers = [
-    { name: "Basic", cost: 0, mult: 1, color: "#444" },
-    { name: "Copper", cost: 1000, mult: 3, color: "#b87333" },
-    { name: "Iron", cost: 25000, mult: 10, color: "#dddddd" },
-    { name: "Gold", cost: 500000, mult: 50, color: "#ffd700" },
-    { name: "Diamond", cost: 10000000, mult: 250, color: "#00ffff" },
-    { name: "Dark Matter", cost: 250000000, mult: 1500, color: "#8a2be2" }
+    { name: "Basic", cost: 0, mult: 1, texture: "none", color: "#444" },
+    { name: "Copper", cost: 1000, mult: 3, texture: "textures/copper.jpeg", color: "#b87333" },
+    { name: "Iron", cost: 25000, mult: 10, texture: "textures/iron.jpeg", color: "#dddddd" },
+    { name: "Gold", cost: 500000, mult: 50, texture: "textures/gold.jpeg", color: "#ffd700" },
+    { name: "Diamond", cost: 10000000, mult: 250, texture: "none", color: "#00ffff" },
+    { name: "Dark Matter", cost: 250000000, mult: 1500, texture: "textures/darkmatter.jpeg", color: "#8a2be2" }
 ];
+
+// Helper function to apply textures to both plate and rocker
+function applySwitchVisuals() {
+    let tier = switchTiers[state.switchTier];
+    let plate = document.getElementById('switch-plate');
+    let rocker = document.getElementById('switch-rocker');
+    
+    if (tier.texture !== "none") {
+        plate.style.backgroundImage = `url('${tier.texture}')`;
+        rocker.style.backgroundImage = `url('${tier.texture}')`;
+        plate.style.backgroundColor = 'transparent';
+        rocker.style.backgroundColor = 'transparent';
+    } else {
+        plate.style.backgroundImage = 'none';
+        rocker.style.backgroundImage = 'none';
+        plate.style.backgroundColor = '#f0f0f0';
+        rocker.style.backgroundColor = tier.color;
+    }
+}
 
 // --- PRESTIGE UPGRADES ---
 const prestigeUpgrades = {
-    capacitorBoost: { level: 0, baseCost: 1, rate: 1.5, value: 0.10 }, // +10% all production
-    autoStart: { level: 0, baseCost: 3, rate: 5, value: 5 },           // Start with 5 auto-flickers per level
-    baseCrit: { level: 0, baseCost: 5, rate: 2, value: 0.02 }          // +2% base crit chance
+    capacitorBoost: { level: 0, baseCost: 1, rate: 1.5, value: 0.10 }, 
+    autoStart: { level: 0, baseCost: 3, rate: 5, value: 5 },           
+    baseCrit: { level: 0, baseCost: 5, rate: 2, value: 0.02 }          
 };
 
 // --- GAME STATE ---
@@ -99,7 +118,7 @@ function getAchievementMult() {
     for (const key in state.achievements) {
         if (state.achievements[key].unlocked) count++;
     }
-    return 1 + (count * 0.01); // +1% per achievement
+    return 1 + (count * 0.01); 
 }
 
 function getClickPower() {
@@ -172,9 +191,8 @@ function claimDaily() {
     state.lastDailyClaim = now;
     document.getElementById('daily-reward-container').style.display = 'none';
     
-    // Reward = 2 hours of current auto production
     let reward = getAutoPower() * 7200; 
-    if (reward < 1000) reward = 1000; // Minimum 1k reward
+    if (reward < 1000) reward = 1000; 
     
     state.watts += reward;
     state.totalWatts += reward;
@@ -189,7 +207,6 @@ function spawnElecDrop() {
     const drop = document.createElement('div');
     drop.classList.add('elec-drop');
     
-    // 10% chance for Golden Bolt (Variable Ratio Jackpot)
     let isGolden = Math.random() < 0.10;
     if (isGolden) {
         drop.classList.add('golden');
@@ -201,11 +218,9 @@ function spawnElecDrop() {
     drop.addEventListener('click', () => {
         let bonus = 0;
         if (isGolden) {
-            // Golden Bolt = 1 hour of passive production
             bonus = getAutoPower() * 3600;
             createFloatingText(`JACKPOT! +${formatNumber(bonus)} W`, false, true);
         } else {
-            // Normal drop = 10x click + 20s auto
             bonus = (getClickPower() * 10) + (getAutoPower() * 20);
             createFloatingText(`+${formatNumber(bonus)} W`, false, true);
         }
@@ -231,7 +246,7 @@ function toggleSwitch(isAuto = false) {
     if (state.isOn) {
         if(!isAuto) playClick();
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
-        rockerEl.style.background = switchTiers[state.switchTier].color; 
+        rockerEl.style.filter = "brightness(1.3)"; // Brightens the texture
         
         let power = getClickPower();
         let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
@@ -253,7 +268,7 @@ function toggleSwitch(isAuto = false) {
     } else {
         if(!isAuto) playClick();
         rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
-        rockerEl.style.background = switchTiers[state.switchTier].color; 
+        rockerEl.style.filter = "brightness(0.6)"; // Darkens the texture
         rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
     }
 }
@@ -267,7 +282,7 @@ function buyUpgrade(key) {
             playPay();
             state.watts -= cost;
             state.switchTier = nextTier;
-            document.getElementById('switch-rocker').style.background = switchTiers[state.switchTier].color;
+            applySwitchVisuals(); 
             updateUI();
         }
     } else {
@@ -288,7 +303,6 @@ function buyPrestigeUpgrade(key) {
         state.capacitors -= cost;
         prestigeUpgrades[key].level++;
         
-        // If buying autoStart, apply the free flickers immediately if on a fresh run
         if (key === 'autoStart' && state.upgrades.auto.level < prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value) {
             state.upgrades.auto.level = prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value;
         }
@@ -331,26 +345,23 @@ function doPrestige() {
     state.totalWatts = 0;
     state.heat = 0;
     state.switchTier = 0; 
-    state.overdriveActive = true; // 2x boost for 2 minutes after prestige
+    state.overdriveActive = true; 
     
-    // Reset standard upgrades
     for (const key in state.upgrades) {
         state.upgrades[key].level = 0;
     }
     
-    // Apply autoStart bonus if owned
     if (prestigeUpgrades.autoStart.level > 0) {
         state.upgrades.auto.level = prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value;
     }
     
-    // Overdrive timer
     setTimeout(() => {
         state.overdriveActive = false;
         createFloatingText(`OVERDRIVE ENDED`, false, false);
-    }, 120000); // 2 minutes
+    }, 120000); 
     
     document.getElementById('capacitors-display').style.display = 'block';
-    document.getElementById('switch-rocker').style.background = switchTiers[0].color;
+    applySwitchVisuals(); 
     playJackpot();
     updateUI();
 }
@@ -417,7 +428,6 @@ function updateUI() {
     let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
     document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
 
-    // Switch Tier UI
     let nextTier = state.switchTier + 1;
     let tierNameEl = document.getElementById('switchTier-name');
     let tierCostEl = document.getElementById('switchTier-cost');
@@ -436,7 +446,6 @@ function updateUI() {
         if(tierCard) { tierCard.classList.add('disabled'); tierCard.style.opacity = "0.5"; }
     }
 
-    // Standard Upgrades
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
@@ -450,7 +459,6 @@ function updateUI() {
         }
     }
 
-    // Prestige Upgrades
     for (const key in prestigeUpgrades) {
         let cost = getPrestigeCost(key);
         let levelEl = document.getElementById(`${key}-level`);
@@ -501,6 +509,7 @@ setInterval(() => {
 }, 15000);
 
 // Init
+applySwitchVisuals(); 
 toggleSwitch(true); 
 updateUI();
 
