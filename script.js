@@ -4,55 +4,22 @@ let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
 let musicSound = document.getElementById('audio-music');
 let pageClickSound = document.getElementById('audio-pageclick');
+let jackpotSound = document.getElementById('audio-jackpot');
 
-// Set volumes
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 1.0; 
 if (sirenSound) sirenSound.volume = 0.6;
 if (musicSound) musicSound.volume = 0.2; 
 if (pageClickSound) pageClickSound.volume = 0.6;
+if (jackpotSound) jackpotSound.volume = 0.8;
 
-function playClick() {
-    if (!clickSound) return;
-    try {
-        clickSound.currentTime = 0; 
-        let playPromise = clickSound.play();
-        if (playPromise !== undefined) { playPromise.catch(e => {}); }
-    } catch (e) {}
-}
+function playClick() { if (!clickSound) return; try { clickSound.currentTime = 0; clickSound.play().catch(e=>{}); } catch(e){} }
+function playPay() { if (!paySound) return; try { paySound.currentTime = 0; paySound.play().catch(e=>{}); } catch(e){} }
+function playSiren() { if (!sirenSound) return; try { sirenSound.currentTime = 0; sirenSound.play().catch(e=>{}); } catch(e){} }
+function playPageClick() { if (!pageClickSound) return; try { pageClickSound.currentTime = 0; pageClickSound.play().catch(e=>{}); } catch(e){} }
+function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
 
-function playPay() {
-    if (!paySound) return;
-    try {
-        paySound.currentTime = 0;
-        let playPromise = paySound.play();
-        if (playPromise !== undefined) { playPromise.catch(e => {}); }
-    } catch (e) {}
-}
-
-function playSiren() {
-    if (!sirenSound) return;
-    try {
-        sirenSound.currentTime = 0;
-        let playPromise = sirenSound.play();
-        if (playPromise !== undefined) { playPromise.catch(e => {}); }
-    } catch (e) {}
-}
-
-function playPageClick() {
-    if (!pageClickSound) return;
-    try {
-        pageClickSound.currentTime = 0;
-        let playPromise = pageClickSound.play();
-        if (playPromise !== undefined) { playPromise.catch(e => {}); }
-    } catch (e) {}
-}
-
-function startMusic() {
-    if (musicSound && musicSound.paused) {
-        musicSound.play().catch(e => {});
-    }
-}
+function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
 document.body.addEventListener('click', startMusic, { once: true });
 
 // --- SWITCH MATERIAL TIERS ---
@@ -65,6 +32,13 @@ const switchTiers = [
     { name: "Dark Matter", cost: 250000000, mult: 1500, color: "#8a2be2" }
 ];
 
+// --- PRESTIGE UPGRADES ---
+const prestigeUpgrades = {
+    capacitorBoost: { level: 0, baseCost: 1, rate: 1.5, value: 0.10 }, // +10% all production
+    autoStart: { level: 0, baseCost: 3, rate: 5, value: 5 },           // Start with 5 auto-flickers per level
+    baseCrit: { level: 0, baseCost: 5, rate: 2, value: 0.02 }          // +2% base crit chance
+};
+
 // --- GAME STATE ---
 const state = {
     watts: 0,
@@ -74,6 +48,8 @@ const state = {
     breakerTripped: false,
     capacitors: 0,
     switchTier: 0, 
+    overdriveActive: false,
+    lastDailyClaim: 0,
     upgrades: {
         click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
         voltage: { level: 0, baseCost: 5000, rate: 1.6, value: 5 },        
@@ -81,11 +57,9 @@ const state = {
         overcharge: { level: 0, baseCost: 20000, rate: 2.0, value: 5 },    
         thermoGen: { level: 0, baseCost: 50000, rate: 1.8, value: 0.01 },  
         servo: { level: 0, baseCost: 10000, rate: 1.7, value: 0.05 },      
-        
         cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },
         liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },
         thermal: { level: 0, baseCost: 800, rate: 1.4, value: 0.5 },
-        
         auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
         quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
         solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 }
@@ -103,7 +77,7 @@ const state = {
 
 // --- VIEW SYSTEM ---
 function switchView(viewId) {
-    playPageClick(); // Plays the sound when navigating pages!
+    playPageClick();
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
     if(viewId === 'view-achvmt') renderAchievements();
@@ -115,17 +89,36 @@ function getCost(upgKey) {
     return Math.ceil(upg.baseCost * Math.pow(upg.rate, upg.level));
 }
 
+function getPrestigeCost(upgKey) {
+    let upg = prestigeUpgrades[upgKey];
+    return Math.ceil(upg.baseCost * Math.pow(upg.rate, upg.level));
+}
+
+function getAchievementMult() {
+    let count = 0;
+    for (const key in state.achievements) {
+        if (state.achievements[key].unlocked) count++;
+    }
+    return 1 + (count * 0.01); // +1% per achievement
+}
+
 function getClickPower() {
     let base = state.upgrades.click.value * (state.upgrades.click.level + 1);
     let voltMult = 1 + (state.upgrades.voltage.level * state.upgrades.voltage.value); 
     let thermoMult = 1 + (state.heat * state.upgrades.thermoGen.level * state.upgrades.thermoGen.value); 
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
-    return base * voltMult * thermoMult * tierMult * prestigeMult;
+    let achvMult = getAchievementMult();
+    let capBoostMult = 1 + (prestigeUpgrades.capacitorBoost.level * prestigeUpgrades.capacitorBoost.value);
+    let overdriveMult = state.overdriveActive ? 2 : 1;
+    
+    return base * voltMult * thermoMult * tierMult * prestigeMult * achvMult * capBoostMult * overdriveMult;
 }
 
 function getCritChance() {
-    return Math.min(0.75, state.upgrades.surge.level * state.upgrades.surge.value);
+    let base = state.upgrades.surge.level * state.upgrades.surge.value;
+    let prestigeBase = prestigeUpgrades.baseCrit.level * prestigeUpgrades.baseCrit.value;
+    return Math.min(0.75, base + prestigeBase);
 }
 
 function getCritMult() {
@@ -149,15 +142,44 @@ function getAutoPower() {
     let solarBase = state.upgrades.solar.value * state.upgrades.solar.level;
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
+    let achvMult = getAchievementMult();
+    let capBoostMult = 1 + (prestigeUpgrades.capacitorBoost.level * prestigeUpgrades.capacitorBoost.value);
+    let overdriveMult = state.overdriveActive ? 2 : 1;
     
     let servoConversion = getClickPower() * (state.upgrades.servo.level * state.upgrades.servo.value);
     
-    return ((autoBase * quantumMult) + solarBase + servoConversion) * tierMult * prestigeMult;
+    return ((autoBase * quantumMult) + solarBase + servoConversion) * tierMult * prestigeMult * achvMult * capBoostMult * overdriveMult;
 }
 
 function getPrestigeGain() {
     if (state.totalWatts < 1000000) return 0;
     return Math.floor(Math.sqrt(state.totalWatts / 1000000));
+}
+
+// --- DAILY REWARD ---
+function checkDailyReward() {
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    if (now - state.lastDailyClaim >= twentyFourHours) {
+        document.getElementById('daily-reward-container').style.display = 'block';
+    } else {
+        document.getElementById('daily-reward-container').style.display = 'none';
+    }
+}
+
+function claimDaily() {
+    const now = Date.now();
+    state.lastDailyClaim = now;
+    document.getElementById('daily-reward-container').style.display = 'none';
+    
+    // Reward = 2 hours of current auto production
+    let reward = getAutoPower() * 7200; 
+    if (reward < 1000) reward = 1000; // Minimum 1k reward
+    
+    state.watts += reward;
+    state.totalWatts += reward;
+    playJackpot();
+    createFloatingText(`DAILY BONUS: +${formatNumber(reward)} W`, false, true);
 }
 
 // --- ELECTRICITY DROPS ---
@@ -166,27 +188,41 @@ function spawnElecDrop() {
     
     const drop = document.createElement('div');
     drop.classList.add('elec-drop');
+    
+    // 10% chance for Golden Bolt (Variable Ratio Jackpot)
+    let isGolden = Math.random() < 0.10;
+    if (isGolden) {
+        drop.classList.add('golden');
+        playJackpot();
+    }
+    
     drop.style.left = `${Math.random() * 90 + 5}%`;
     
     drop.addEventListener('click', () => {
-        let bonus = (getClickPower() * 10) + (getAutoPower() * 20);
+        let bonus = 0;
+        if (isGolden) {
+            // Golden Bolt = 1 hour of passive production
+            bonus = getAutoPower() * 3600;
+            createFloatingText(`JACKPOT! +${formatNumber(bonus)} W`, false, true);
+        } else {
+            // Normal drop = 10x click + 20s auto
+            bonus = (getClickPower() * 10) + (getAutoPower() * 20);
+            createFloatingText(`+${formatNumber(bonus)} W`, false, true);
+        }
+        
         state.watts += bonus;
         state.totalWatts += bonus;
-        createFloatingText(`+${formatNumber(bonus)} W`, false, true);
         drop.remove(); 
         playPay(); 
     });
     
     document.getElementById('elec-drop-container').appendChild(drop);
-    setTimeout(() => {
-        if (drop.parentNode) drop.remove();
-    }, 3000);
+    setTimeout(() => { if (drop.parentNode) drop.remove(); }, isGolden ? 5000 : 3000);
 }
 
 // --- ACTIONS ---
 function toggleSwitch(isAuto = false) {
     if (state.breakerTripped) return;
-
     state.isOn = !state.isOn;
     
     let rockerEl = document.getElementById('switch-rocker');
@@ -194,7 +230,6 @@ function toggleSwitch(isAuto = false) {
     
     if (state.isOn) {
         if(!isAuto) playClick();
-        
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
         rockerEl.style.background = switchTiers[state.switchTier].color; 
         
@@ -207,24 +242,16 @@ function toggleSwitch(isAuto = false) {
 
         if(!isAuto) {
             let isCrit = Math.random() < getCritChance();
-            if (isCrit) {
-                power *= getCritMult(); 
-            }
+            if (isCrit) power *= getCritMult(); 
 
             state.watts += power;
             state.totalWatts += power;
-
             state.heat += getHeatPerClick();
-            if (state.heat >= 100) {
-                state.heat = 100;
-                tripBreaker();
-            }
-
+            if (state.heat >= 100) { state.heat = 100; tripBreaker(); }
             createFloatingText(`+${formatNumber(power)} W`, isCrit);
         }
     } else {
         if(!isAuto) playClick();
-        
         rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
         rockerEl.style.background = switchTiers[state.switchTier].color; 
         rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
@@ -235,7 +262,6 @@ function buyUpgrade(key) {
     if (key === 'switchTier') {
         let nextTier = state.switchTier + 1;
         if (nextTier >= switchTiers.length) return; 
-        
         let cost = switchTiers[nextTier].cost;
         if (state.watts >= cost) {
             playPay();
@@ -255,11 +281,26 @@ function buyUpgrade(key) {
     }
 }
 
+function buyPrestigeUpgrade(key) {
+    let cost = getPrestigeCost(key);
+    if (state.capacitors >= cost) {
+        playPay();
+        state.capacitors -= cost;
+        prestigeUpgrades[key].level++;
+        
+        // If buying autoStart, apply the free flickers immediately if on a fresh run
+        if (key === 'autoStart' && state.upgrades.auto.level < prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value) {
+            state.upgrades.auto.level = prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value;
+        }
+        
+        updateUI();
+    }
+}
+
 function tripBreaker() {
     state.breakerTripped = true;
     state.heat = 0;
     playSiren();
-    
     document.getElementById('breaker-overlay').style.display = 'flex';
     document.getElementById('lightning-bolt').style.opacity = 0; 
     document.getElementById('switch-rocker').style.boxShadow = "none"; 
@@ -290,12 +331,27 @@ function doPrestige() {
     state.totalWatts = 0;
     state.heat = 0;
     state.switchTier = 0; 
+    state.overdriveActive = true; // 2x boost for 2 minutes after prestige
+    
+    // Reset standard upgrades
     for (const key in state.upgrades) {
         state.upgrades[key].level = 0;
     }
     
+    // Apply autoStart bonus if owned
+    if (prestigeUpgrades.autoStart.level > 0) {
+        state.upgrades.auto.level = prestigeUpgrades.autoStart.level * prestigeUpgrades.autoStart.value;
+    }
+    
+    // Overdrive timer
+    setTimeout(() => {
+        state.overdriveActive = false;
+        createFloatingText(`OVERDRIVE ENDED`, false, false);
+    }, 120000); // 2 minutes
+    
     document.getElementById('capacitors-display').style.display = 'block';
     document.getElementById('switch-rocker').style.background = switchTiers[0].color;
+    playJackpot();
     updateUI();
 }
 
@@ -320,22 +376,13 @@ function checkAchievements() {
 function renderAchievements() {
     const listEl = document.getElementById('achv-list');
     listEl.innerHTML = '';
-    
     for (const key in state.achievements) {
         let achv = state.achievements[key];
         let card = document.createElement('div');
         card.classList.add('achv-card');
         if (achv.unlocked) card.classList.add('unlocked');
-
         let icon = achv.unlocked ? '★' : '?';
-        
-        card.innerHTML = `
-            <div class="achv-icon">${icon}</div>
-            <div class="achv-text">
-                <h3>${achv.name}</h3>
-                <p>${achv.desc}</p>
-            </div>
-        `;
+        card.innerHTML = `<div class="achv-icon">${icon}</div><div class="achv-text"><h3>${achv.name}</h3><p>${achv.desc}</p></div>`;
         listEl.appendChild(card);
     }
 }
@@ -362,9 +409,7 @@ function createFloatingText(text, isCrit = false, isElec = false) {
 
 function updateUI() {
     document.getElementById('watts-display').innerText = `${formatNumber(state.watts)} W`;
-    
-    let autoWps = getAutoPower();
-    document.getElementById('watts-per-sec').innerText = `per second: ${formatNumber(autoWps)}`;
+    document.getElementById('watts-per-sec').innerText = `per second: ${formatNumber(getAutoPower())}${state.overdriveActive ? ' (OVERDRIVE)' : ''}`;
     document.getElementById('capacitors-display').innerText = `${state.capacitors} Capacitors`;
     document.getElementById('prestige-bonus').innerText = `${state.capacitors * 10}%`;
     
@@ -372,6 +417,7 @@ function updateUI() {
     let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
     document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
 
+    // Switch Tier UI
     let nextTier = state.switchTier + 1;
     let tierNameEl = document.getElementById('switchTier-name');
     let tierCostEl = document.getElementById('switchTier-cost');
@@ -387,23 +433,33 @@ function updateUI() {
     } else {
         if(tierNameEl) tierNameEl.innerText = "MAX";
         if(tierCostEl) tierCostEl.innerText = "---";
-        if(tierCard) {
-            tierCard.classList.add('disabled');
-            tierCard.style.opacity = "0.5";
-        }
+        if(tierCard) { tierCard.classList.add('disabled'); tierCard.style.opacity = "0.5"; }
     }
 
+    // Standard Upgrades
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
         let costEl = document.getElementById(`${key}-cost`);
         let card = document.querySelector(`.upgrade-card[onclick="buyUpgrade('${key}')"]`);
-
         if (levelEl) levelEl.innerText = state.upgrades[key].level;
         if (costEl) costEl.innerText = formatNumber(cost);
-        
         if (card) {
             if (state.watts >= cost) card.classList.remove('disabled');
+            else card.classList.add('disabled');
+        }
+    }
+
+    // Prestige Upgrades
+    for (const key in prestigeUpgrades) {
+        let cost = getPrestigeCost(key);
+        let levelEl = document.getElementById(`${key}-level`);
+        let costEl = document.getElementById(`${key}-cost`);
+        let card = document.querySelector(`.upgrade-card[onclick="buyPrestigeUpgrade('${key}')"]`);
+        if (levelEl) levelEl.innerText = prestigeUpgrades[key].level;
+        if (costEl) costEl.innerText = cost;
+        if (card) {
+            if (state.capacitors >= cost) card.classList.remove('disabled');
             else card.classList.add('disabled');
         }
     }
@@ -420,32 +476,28 @@ function updateUI() {
     }
 
     checkAchievements();
+    checkDailyReward();
 }
 
 // --- GAME LOOP ---
 setInterval(() => {
     if (state.breakerTripped) return;
-
     state.heat = Math.max(0, state.heat - (getHeatDecayPerSec() * 0.1));
     
     let autoWps = getAutoPower();
     if (autoWps > 0) {
         state.watts += autoWps * 0.1; 
         state.totalWatts += autoWps * 0.1;
-        
         let autoHeatGen = (state.upgrades.auto.value * state.upgrades.auto.level) * 0.05; 
         state.heat += autoHeatGen * 0.1; 
         if (state.heat >= 100) tripBreaker();
     }
-    
     updateUI();
 }, 100);
 
 // --- ELECTRICITY DROP SPAWN LOOP ---
 setInterval(() => {
-    if (Math.random() < 0.25) {
-        spawnElecDrop();
-    }
+    if (Math.random() < 0.25) spawnElecDrop();
 }, 15000);
 
 // Init
