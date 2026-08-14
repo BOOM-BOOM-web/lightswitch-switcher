@@ -3,11 +3,14 @@ let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
 let musicSound = document.getElementById('audio-music');
+let pageClickSound = document.getElementById('audio-pageclick');
 
+// Set volumes
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 1.0; 
 if (sirenSound) sirenSound.volume = 0.6;
 if (musicSound) musicSound.volume = 0.2; 
+if (pageClickSound) pageClickSound.volume = 0.6;
 
 function playClick() {
     if (!clickSound) return;
@@ -32,6 +35,15 @@ function playSiren() {
     try {
         sirenSound.currentTime = 0;
         let playPromise = sirenSound.play();
+        if (playPromise !== undefined) { playPromise.catch(e => {}); }
+    } catch (e) {}
+}
+
+function playPageClick() {
+    if (!pageClickSound) return;
+    try {
+        pageClickSound.currentTime = 0;
+        let playPromise = pageClickSound.play();
         if (playPromise !== undefined) { playPromise.catch(e => {}); }
     } catch (e) {}
 }
@@ -64,11 +76,11 @@ const state = {
     switchTier: 0, 
     upgrades: {
         click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
-        voltage: { level: 0, baseCost: 5000, rate: 1.6, value: 5 },        // NEW: +5x flat mult
+        voltage: { level: 0, baseCost: 5000, rate: 1.6, value: 5 },        
         surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },
-        overcharge: { level: 0, baseCost: 20000, rate: 2.0, value: 5 },    // NEW: +5x to crit multiplier
-        thermoGen: { level: 0, baseCost: 50000, rate: 1.8, value: 0.01 },  // NEW: 1% click boost per 1% heat
-        servo: { level: 0, baseCost: 10000, rate: 1.7, value: 0.05 },      // NEW: 5% of click power -> W/s
+        overcharge: { level: 0, baseCost: 20000, rate: 2.0, value: 5 },    
+        thermoGen: { level: 0, baseCost: 50000, rate: 1.8, value: 0.01 },  
+        servo: { level: 0, baseCost: 10000, rate: 1.7, value: 0.05 },      
         
         cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },
         liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },
@@ -91,6 +103,7 @@ const state = {
 
 // --- VIEW SYSTEM ---
 function switchView(viewId) {
+    playPageClick(); // Plays the sound when navigating pages!
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
     if(viewId === 'view-achvmt') renderAchievements();
@@ -104,8 +117,8 @@ function getCost(upgKey) {
 
 function getClickPower() {
     let base = state.upgrades.click.value * (state.upgrades.click.level + 1);
-    let voltMult = 1 + (state.upgrades.voltage.level * state.upgrades.voltage.value); // +5x per level
-    let thermoMult = 1 + (state.heat * state.upgrades.thermoGen.level * state.upgrades.thermoGen.value); // Scales with heat!
+    let voltMult = 1 + (state.upgrades.voltage.level * state.upgrades.voltage.value); 
+    let thermoMult = 1 + (state.heat * state.upgrades.thermoGen.level * state.upgrades.thermoGen.value); 
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
     return base * voltMult * thermoMult * tierMult * prestigeMult;
@@ -116,7 +129,7 @@ function getCritChance() {
 }
 
 function getCritMult() {
-    return 10 + (state.upgrades.overcharge.level * state.upgrades.overcharge.value); // Base 10x, +5x per level
+    return 10 + (state.upgrades.overcharge.level * state.upgrades.overcharge.value); 
 }
 
 function getHeatPerClick() {
@@ -137,7 +150,6 @@ function getAutoPower() {
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
     
-    // Servo Motor: Converts a % of Click Power into Passive W/s
     let servoConversion = getClickPower() * (state.upgrades.servo.level * state.upgrades.servo.value);
     
     return ((autoBase * quantumMult) + solarBase + servoConversion) * tierMult * prestigeMult;
@@ -196,7 +208,7 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) {
             let isCrit = Math.random() < getCritChance();
             if (isCrit) {
-                power *= getCritMult(); // Use dynamic crit multiplier
+                power *= getCritMult(); 
             }
 
             state.watts += power;
@@ -360,7 +372,6 @@ function updateUI() {
     let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
     document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
 
-    // Update Switch Tier UI
     let nextTier = state.switchTier + 1;
     let tierNameEl = document.getElementById('switchTier-name');
     let tierCostEl = document.getElementById('switchTier-cost');
@@ -382,7 +393,6 @@ function updateUI() {
         }
     }
 
-    // Update standard upgrades (Dynamically handles all new upgrades too!)
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
