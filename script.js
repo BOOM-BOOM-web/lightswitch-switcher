@@ -1,11 +1,11 @@
-// --- SAVE MANAGER (Combined into script.js for stability) ---
+// --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v2', // Changed key to prevent old saves from breaking the game!
+    key: 'flipTheSwitch_v2',
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
     },
-        load() {
+    load() {
         const data = localStorage.getItem(this.key);
         if (!data) return;
         try {
@@ -20,7 +20,7 @@ const SaveManager = {
             state.breakerTripped = false;
             state.isRebirthing = false;
 
-            // --- FIX: Re-apply switch textures and toggle state after loading ---
+            // Re-apply switch textures and toggle state after loading save
             applySwitchVisuals();
             let rockerEl = document.getElementById('switch-rocker');
             if (state.isOn) {
@@ -45,13 +45,6 @@ const SaveManager = {
                 state.watts += offlineEarnings;
                 state.totalWatts += offlineEarnings;
                 this.showOfflinePopup(secondsPassed, offlineEarnings);
-            }
-            updateUI();
-        } catch(e) {
-            console.error("Save file corrupted, resetting.", e);
-            localStorage.removeItem(this.key);
-        }
-    },
             }
             updateUI();
         } catch(e) {
