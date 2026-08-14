@@ -1,3 +1,84 @@
+// --- SAVE MANAGER (Combined into script.js for stability) ---
+const SaveManager = {
+    key: 'flipTheSwitch_v2', // Changed key to prevent old saves from breaking the game!
+    save() {
+        state.lastSaved = Date.now();
+        localStorage.setItem(this.key, JSON.stringify(state));
+    },
+    load() {
+        const data = localStorage.getItem(this.key);
+        if (!data) return;
+        try {
+            const savedState = JSON.parse(data);
+            for (let key in savedState) {
+                if (typeof savedState[key] === 'object' && !Array.isArray(savedState[key]) && state[key]) {
+                    Object.assign(state[key], savedState[key]);
+                } else {
+                    state[key] = savedState[key];
+                }
+            }
+            state.breakerTripped = false;
+            state.isRebirthing = false;
+
+            const now = Date.now();
+            const lastSaved = savedState.lastSaved || now;
+            const secondsPassed = Math.min(28800, (now - lastSaved) / 1000);
+            const autoWps = getAutoPower();
+            const offlineEarnings = autoWps * secondsPassed;
+
+            if (offlineEarnings > 0) {
+                state.watts += offlineEarnings;
+                state.totalWatts += offlineEarnings;
+                this.showOfflinePopup(secondsPassed, offlineEarnings);
+            }
+            updateUI();
+        } catch(e) {
+            console.error("Save file corrupted, resetting.", e);
+            localStorage.removeItem(this.key);
+        }
+    },
+    showOfflinePopup(seconds, earnings) {
+        const popup = document.createElement('div');
+        popup.style.position = 'fixed';
+        popup.style.top = '50%';
+        popup.style.left = '50%';
+        popup.style.transform = 'translate(-50%, -50%)';
+        popup.style.background = '#000';
+        popup.style.border = '4px solid #ffdf00';
+        popup.style.boxShadow = '6px 6px 0px #000';
+        popup.style.padding = '30px';
+        popup.style.zIndex = '1000';
+        popup.style.textAlign = 'center';
+        popup.style.color = '#fff';
+        popup.style.fontFamily = "'Press Start 2P', cursive";
+        popup.style.maxWidth = '90%';
+        popup.style.boxSizing = 'border-box';
+
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        let timeStr = '';
+        if (hours > 0) timeStr += `${hours}h `;
+        if (mins > 0 || hours > 0) timeStr += `${mins}m `;
+        timeStr += `${secs}s`;
+
+        popup.innerHTML = `
+            <h2 style="color:#ffdf00; font-size: 1.2rem; margin-bottom: 20px;">WELCOME BACK</h2>
+            <p style="font-size: 0.7rem; color: #cccccc; margin-bottom: 15px;">You were away for:<br><span style="color:#fff; font-size: 0.9rem;">${timeStr}</span></p>
+            <p style="font-size: 0.8rem; color:#00ffff; margin-bottom: 25px;">Your grid produced:<br><span style="font-size: 1.1rem;">${formatNumber(earnings)} W</span></p>
+            <button id="collect-btn" style="background:#ffdf00; color:#000; border:none; padding:12px 20px; font-family:inherit; font-size:0.8rem; cursor:pointer;">COLLECT</button>
+        `;
+        document.body.appendChild(popup);
+        document.getElementById('collect-btn').addEventListener('click', () => {
+            popup.remove();
+        });
+    },
+    initSaveLoop() {
+        setInterval(() => this.save(), 15000);
+        window.addEventListener('beforeunload', () => this.save());
+    }
+};
+
 // --- SOUND SYSTEM ---
 let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
@@ -6,7 +87,6 @@ let musicSound = document.getElementById('audio-music');
 let pageClickSound = document.getElementById('audio-pageclick');
 let jackpotSound = document.getElementById('audio-jackpot');
 let hoverSound = document.getElementById('audio-hover');
-let explosionSound = document.getElementById('audio-explosion');
 
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 1.0; 
@@ -15,7 +95,6 @@ if (musicSound) musicSound.volume = 0.2;
 if (pageClickSound) pageClickSound.volume = 0.6;
 if (jackpotSound) jackpotSound.volume = 0.8;
 if (hoverSound) hoverSound.volume = 0.4;
-if (explosionSound) explosionSound.volume = 0.8;
 
 function playClick() { if (!clickSound) return; try { clickSound.currentTime = 0; clickSound.play().catch(e=>{}); } catch(e){} }
 function playPay() { if (!paySound) return; try { paySound.currentTime = 0; paySound.play().catch(e=>{}); } catch(e){} }
@@ -23,7 +102,14 @@ function playSiren() { if (!sirenSound) return; try { sirenSound.currentTime = 0
 function playPageClick() { if (!pageClickSound) return; try { pageClickSound.currentTime = 0; pageClickSound.play().catch(e=>{}); } catch(e){} }
 function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
 function playHover() { if (!hoverSound) return; try { hoverSound.currentTime = 0; hoverSound.play().catch(e=>{}); } catch(e){} }
-function playExplosion() { if (!explosionSound) return; try { explosionSound.currentTime = 0; explosionSound.play().catch(e=>{}); } catch(e){} }
+
+function playExplosion() {
+    try {
+        let exp = new Audio('sounds/explosion.mp3');
+        exp.volume = 0.8;
+        exp.play().catch(e=>{});
+    } catch(e){}
+}
 
 function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
 document.body.addEventListener('click', startMusic, { once: true });
@@ -70,7 +156,6 @@ const state = {
         auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
         quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
         solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 },
-        // 10 New Items
         flux: { level: 0, baseCost: 100000, rate: 1.9, value: 10 },
         plasma: { level: 0, baseCost: 500000, rate: 1.85, value: 500 },
         fusion: { level: 0, baseCost: 2000000, rate: 2.1, value: 3 },
@@ -96,23 +181,18 @@ const state = {
         cosmic: { name: "Cosmic", desc: "Reach 1 Quadrillion Total Watts.", mult: 5, completed: false },
         infinity: { name: "Infinity", desc: "Reach 1 Quintillion Total Watts.", mult: 50, completed: false }
     },
-    rebirthTree: {} // Holds purchased tree node IDs
+    rebirthTree: {} 
 };
 
 // --- REBIRTH TREE GENERATION ---
-// Generates a 10x10 grid (100 nodes) with dependencies
 const treeNodes = [];
 for(let i=0; i<100; i++) {
     let tier = Math.floor(i / 10);
     let reqs = [];
-    // Require previous node in same row
     if (i % 10 !== 0) reqs.push(i - 1);
-    // Require node above (if not first row)
     if (tier > 0) reqs.push(i - 10);
-    
     let cost = 1 + tier;
-    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); // Final node x1000, others small %
-    
+    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); 
     treeNodes.push({ id: i, tier, reqs, cost, effect });
 }
 
@@ -165,7 +245,6 @@ function renderRebirthTree() {
         
         container.appendChild(div);
         
-        // Draw lines
         node.reqs.forEach(reqId => {
             if (state.rebirthTree[reqId] !== undefined) {
                 let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -207,7 +286,7 @@ function finishRebirth() {
 
 // --- VIEW SYSTEM ---
 function switchView(viewId) {
-    if (state.isRebirthing) return; // Lock navigation during rebirth
+    if (state.isRebirthing) return; 
     playPageClick();
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
@@ -363,21 +442,25 @@ function tripBreaker() {
 function doPrestige() {
     let gain = getPrestigeGain(); if (gain < 1) return;
     state.isRebirthing = true;
-    state.capacitors += gain;
-    state.watts = 0; state.totalWatts = 0; state.heat = 0; state.switchTier = 0; 
     
-    for (const key in state.upgrades) { state.upgrades[key].level = 0; }
-    
-    // Trigger Explosion
     let overlay = document.getElementById('explosion-overlay');
-    overlay.classList.add('active'); playExplosion();
+    overlay.classList.add('active');
+    document.body.classList.add('shake');
+    playExplosion();
     
+    state.watts = 0; state.totalWatts = 0; state.heat = 0; state.switchTier = 0; 
+    for (const key in state.upgrades) { state.upgrades[key].level = 0; }
+    updateUI(); 
+
     setTimeout(() => {
         overlay.classList.remove('active');
+        document.body.classList.remove('shake');
+        state.capacitors += gain; 
+        
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-rebirth').classList.add('active');
         applySwitchVisuals(); renderRebirthTree(); updateUI();
-    }, 2000);
+    }, 1500);
 }
 
 // --- ENDGAME ---
