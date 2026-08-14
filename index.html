@@ -68,14 +68,12 @@
         <div class="page-container">
             <h2 class="page-title">STORE</h2>
 
-            <!-- Switch Tier Upgrade -->
             <div class="upgrade-card" onclick="buyUpgrade('switchTier')">
                 <div class="upg-name">- Switch Material: <span id="switchTier-name">Basic</span></div>
                 <div class="upg-info">Cost: <span id="switchTier-cost">1,000</span> W</div>
                 <div class="upg-info">Upgrade switch material for massive multipliers!</div>
             </div>
 
-            <!-- Active Click Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('click')">
                 <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
                 <div class="upg-info">Cost: <span id="click-cost">10</span> W</div>
@@ -112,7 +110,6 @@
                 <div class="upg-info">Converts 5% of Click Power into Passive W/s</div>
             </div>
 
-            <!-- Heat Management Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('cooling')">
                 <div class="upg-name">- Cooling Fan <span id="cooling-level">0</span></div>
                 <div class="upg-info">Cost: <span id="cooling-cost">100</span> W</div>
@@ -131,7 +128,6 @@
                 <div class="upg-info">+0.5 Heat decay per second</div>
             </div>
 
-            <!-- Passive / Auto Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('auto')">
                 <div class="upg-name">- Auto-Flicker AI <span id="auto-level">0</span></div>
                 <div class="upg-info">Cost: <span id="auto-cost">50</span> W</div>
@@ -166,6 +162,8 @@
     <audio id="audio-pay" src="sounds/paying.mp3" preload="auto"></audio>
     <audio id="audio-siren" src="sounds/siren.mp3" preload="auto"></audio>
     <audio id="audio-music" src="sounds/gamemusic.mp3" loop preload="auto"></audio>
+    <!-- NEW: Page Click Sound -->
+    <audio id="audio-pageclick" src="sounds/pageclick.mp3" preload="auto"></audio>
 
     <script src="save.js"></script>
     <script src="script.js"></script>
