@@ -13,7 +13,13 @@
 
     <div id="vignette"></div>
     <div id="elec-drop-container"></div>
-    <div id="explosion-overlay"></div>
+    
+    <!-- New Multi-Layer Explosion -->
+    <div id="explosion-overlay">
+        <div id="exp-flash"></div>
+        <div id="exp-core"></div>
+        <div id="exp-shockwave"></div>
+    </div>
 
     <!-- Daily Reward Button -->
     <div id="daily-reward-container">
@@ -240,7 +246,7 @@
     <audio id="audio-pageclick" src="sounds/pageclick.mp3" preload="auto"></audio>
     <audio id="audio-jackpot" src="sounds/jackpot.mp3" preload="auto"></audio>
     <audio id="audio-hover" src="sounds/hoversound.mp3" preload="auto"></audio>
-    <audio id="audio-explosion" src="sounds/explosion.mp3" preload="auto"></audio>
+    <!-- Explosion is now loaded dynamically in JS to prevent delay -->
 
     <script src="save.js"></script>
     <script src="script.js"></script>
