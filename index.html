@@ -14,6 +14,11 @@
     <div id="vignette"></div>
     <div id="elec-drop-container"></div>
 
+    <!-- Daily Reward Button -->
+    <div id="daily-reward-container">
+        <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY BONUS</button>
+    </div>
+
     <!-- ================= VIEW: GAME ================= -->
     <div id="view-game" class="view active">
         <div id="stats-container">
@@ -145,6 +150,27 @@
                 <div class="upg-info">Cost: <span id="solar-cost">1000</span> W</div>
                 <div class="upg-info">+50 Passive W/s (Generates no heat)</div>
             </div>
+
+            <!-- PRESTIGE SKILL TREE -->
+            <h2 class="page-title" style="margin-top:40px; border-top: 4px solid #444; padding-top: 20px;">GRID UPGRADES (Capacitors)</h2>
+            
+            <div class="upgrade-card prestige-upg" onclick="buyPrestigeUpgrade('capacitorBoost')">
+                <div class="upg-name">- Overclocked Capacitors <span id="capacitorBoost-level">0</span></div>
+                <div class="upg-info">Cost: <span id="capacitorBoost-cost">1</span> Capacitors</div>
+                <div class="upg-info">+10% to all Watts production per level</div>
+            </div>
+
+            <div class="upgrade-card prestige-upg" onclick="buyPrestigeUpgrade('autoStart')">
+                <div class="upg-name">- AI Bootloader <span id="autoStart-level">0</span></div>
+                <div class="upg-info">Cost: <span id="autoStart-cost">3</span> Capacitors</div>
+                <div class="upg-info">Start with 5 free Auto-Flickers after Overload</div>
+            </div>
+
+            <div class="upgrade-card prestige-upg" onclick="buyPrestigeUpgrade('baseCrit')">
+                <div class="upg-name">- Lucky Wiring <span id="baseCrit-level">0</span></div>
+                <div class="upg-info">Cost: <span id="baseCrit-cost">5</span> Capacitors</div>
+                <div class="upg-info">+2% Base Crit Chance per level</div>
+            </div>
         </div>
     </div>
 
@@ -153,6 +179,7 @@
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">ACHIEVEMENTS</h2>
+            <p style="font-size: 0.7rem; color: #00ffff; text-align: center; margin-bottom: 20px;">Each achievement grants +1% to all production!</p>
             <div id="achv-list"></div>
         </div>
     </div>
@@ -162,8 +189,8 @@
     <audio id="audio-pay" src="sounds/paying.mp3" preload="auto"></audio>
     <audio id="audio-siren" src="sounds/siren.mp3" preload="auto"></audio>
     <audio id="audio-music" src="sounds/gamemusic.mp3" loop preload="auto"></audio>
-    <!-- NEW: Page Click Sound -->
     <audio id="audio-pageclick" src="sounds/pageclick.mp3" preload="auto"></audio>
+    <audio id="audio-jackpot" src="sounds/jackpot.mp3" preload="auto"></audio>
 
     <script src="save.js"></script>
     <script src="script.js"></script>
