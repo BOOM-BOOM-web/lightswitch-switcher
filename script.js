@@ -1,4 +1,3 @@
-// --- SOUND SYSTEM ---
 let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
@@ -22,7 +21,6 @@ function playPageClick() { if (!pageClickSound) return; try { pageClickSound.cur
 function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
 function playHover() { if (!hoverSound) return; try { hoverSound.currentTime = 0; hoverSound.play().catch(e=>{}); } catch(e){} }
 
-// Instantly plays explosion sound with zero delay
 function playExplosion() {
     try {
         let exp = new Audio('sounds/explosion.mp3');
@@ -34,7 +32,6 @@ function playExplosion() {
 function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
 document.body.addEventListener('click', startMusic, { once: true });
 
-// --- SWITCH MATERIAL TIERS ---
 const switchTiers = [
     { name: "Basic", cost: 0, mult: 1, texture: "none", color: "#444" },
     { name: "Copper", cost: 1000, mult: 3, texture: "textures/copper.jpeg", color: "#b87333" },
@@ -58,7 +55,6 @@ function applySwitchVisuals() {
     }
 }
 
-// --- GAME STATE ---
 const state = {
     watts: 0, totalWatts: 0, heat: 0, isOn: true, breakerTripped: false,
     capacitors: 0, switchTier: 0, overdriveActive: false, lastDailyClaim: 0,
@@ -76,7 +72,6 @@ const state = {
         auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
         quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
         solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 },
-        // 10 New Items
         flux: { level: 0, baseCost: 100000, rate: 1.9, value: 10 },
         plasma: { level: 0, baseCost: 500000, rate: 1.85, value: 500 },
         fusion: { level: 0, baseCost: 2000000, rate: 2.1, value: 3 },
@@ -105,7 +100,6 @@ const state = {
     rebirthTree: {} 
 };
 
-// --- REBIRTH TREE GENERATION ---
 const treeNodes = [];
 for(let i=0; i<100; i++) {
     let tier = Math.floor(i / 10);
@@ -205,7 +199,6 @@ function finishRebirth() {
     setTimeout(() => { state.overdriveActive = false; }, 120000);
 }
 
-// --- VIEW SYSTEM ---
 function switchView(viewId) {
     if (state.isRebirthing) return; 
     playPageClick();
@@ -215,7 +208,6 @@ function switchView(viewId) {
     if(viewId === 'view-endgame') renderEndgame();
 }
 
-// --- MATH FUNCTIONS ---
 function getCost(upgKey) { let upg = state.upgrades[upgKey]; return Math.ceil(upg.baseCost * Math.pow(upg.rate, upg.level)); }
 function getAchievementMult() { let count = 0; for (const key in state.achievements) { if (state.achievements[key].unlocked) count++; } return 1 + (count * 0.01); }
 function getEndgameMult() { let mult = 1; for (const key in state.endgame) { if (state.endgame[key].completed) mult *= state.endgame[key].mult; } return mult; }
@@ -275,7 +267,6 @@ function getAutoPower() {
 
 function getPrestigeGain() { if (state.totalWatts < 1000000) return 0; return Math.floor(Math.sqrt(state.totalWatts / 1000000)); }
 
-// --- DAILY REWARD ---
 function checkDailyReward() {
     const now = Date.now(); const twentyFourHours = 24 * 60 * 60 * 1000;
     document.getElementById('daily-reward-container').style.display = (now - state.lastDailyClaim >= twentyFourHours) ? 'block' : 'none';
@@ -288,7 +279,6 @@ function claimDaily() {
     createFloatingText(`DAILY BONUS: +${formatNumber(reward)} W`, false, true);
 }
 
-// --- ELECTRICITY DROPS ---
 function spawnElecDrop() {
     if (state.breakerTripped || state.isRebirthing) return;
     const drop = document.createElement('div'); drop.classList.add('elec-drop');
@@ -304,7 +294,6 @@ function spawnElecDrop() {
     setTimeout(() => { if (drop.parentNode) drop.remove(); }, isGolden ? 5000 : 3000);
 }
 
-// --- ACTIONS ---
 function toggleSwitch(isAuto = false) {
     if (state.breakerTripped || state.isRebirthing) return;
     state.isOn = !state.isOn;
@@ -359,18 +348,15 @@ function tripBreaker() {
     }, 100);
 }
 
-// --- PRESTIGE / REBIRTH ---
 function doPrestige() {
     let gain = getPrestigeGain(); if (gain < 1) return;
     state.isRebirthing = true;
     
-    // Trigger Explosion & Sound INSTANTLY
     let overlay = document.getElementById('explosion-overlay');
     overlay.classList.add('active');
     document.body.classList.add('shake');
     playExplosion();
     
-    // Reset stats to 0 visually during the flash
     state.watts = 0; state.totalWatts = 0; state.heat = 0; state.switchTier = 0; 
     for (const key in state.upgrades) { state.upgrades[key].level = 0; }
     updateUI(); 
@@ -378,7 +364,7 @@ function doPrestige() {
     setTimeout(() => {
         overlay.classList.remove('active');
         document.body.classList.remove('shake');
-        state.capacitors += gain; // Apply capacitors after the flash
+        state.capacitors += gain; 
         
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-rebirth').classList.add('active');
@@ -386,7 +372,6 @@ function doPrestige() {
     }, 1500);
 }
 
-// --- ENDGAME ---
 function checkEndgame() {
     let changed = false;
     if (state.switchTier >= 5 && !state.endgameUnlocked) {
@@ -413,7 +398,6 @@ function renderEndgame() {
     }
 }
 
-// --- ACHIEVEMENTS ---
 function checkAchievements() {
     let unlocked = false; let a = state.achievements;
     if (state.totalWatts >= 1 && !a.first_flick.unlocked) { a.first_flick.unlocked = true; unlocked = true; }
@@ -439,7 +423,6 @@ function renderAchievements() {
     }
 }
 
-// --- UI UPDATES ---
 function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
     const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
@@ -500,7 +483,6 @@ function updateUI() {
     checkDailyReward();
 }
 
-// --- GAME LOOP ---
 setInterval(() => {
     if (state.breakerTripped || state.isRebirthing) return;
     state.heat = Math.max(0, state.heat - (getHeatDecayPerSec() * 0.1));
@@ -516,7 +498,6 @@ setInterval(() => {
 
 setInterval(() => { if (Math.random() < 0.25) spawnElecDrop(); }, 15000);
 
-// Init
 applySwitchVisuals(); 
 toggleSwitch(true); 
 updateUI();
