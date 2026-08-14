@@ -12,7 +12,6 @@
 <body>
 
     <div id="vignette"></div>
-    <!-- Container for floating electricity drops -->
     <div id="elec-drop-container"></div>
 
     <!-- ================= VIEW: GAME ================= -->
@@ -46,7 +45,6 @@
             <div id="heat-bar"></div>
         </div>
 
-        <!-- Prestige/Restart Section -->
         <div id="prestige-container">
             <div id="prestige-info">
                 <div>OVERLOAD GRID</div>
@@ -77,10 +75,17 @@
                 <div class="upg-info">Upgrade switch material for massive multipliers!</div>
             </div>
 
+            <!-- Active Click Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('click')">
                 <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
                 <div class="upg-info">Cost: <span id="click-cost">10</span> W</div>
                 <div class="upg-info">Doubles manual click W</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('voltage')">
+                <div class="upg-name">- High Voltage Coil <span id="voltage-level">0</span></div>
+                <div class="upg-info">Cost: <span id="voltage-cost">5,000</span> W</div>
+                <div class="upg-info">+5x Flat Multiplier to Click Power</div>
             </div>
 
             <div class="upgrade-card" onclick="buyUpgrade('surge')">
@@ -89,6 +94,25 @@
                 <div class="upg-info">+1% Crit Chance (10x W per click)</div>
             </div>
 
+            <div class="upgrade-card" onclick="buyUpgrade('overcharge')">
+                <div class="upg-name">- Overcharge Capacitor <span id="overcharge-level">0</span></div>
+                <div class="upg-info">Cost: <span id="overcharge-cost">20,000</span> W</div>
+                <div class="upg-info">+5x Crit Multiplier (Base is 10x)</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('thermoGen')">
+                <div class="upg-name">- Thermal Generator <span id="thermoGen-level">0</span></div>
+                <div class="upg-info">Cost: <span id="thermoGen-cost">50,000</span> W</div>
+                <div class="upg-info">Click Power increases with Heat (Risk/Reward!)</div>
+            </div>
+
+            <div class="upgrade-card" onclick="buyUpgrade('servo')">
+                <div class="upg-name">- Servo Motor <span id="servo-level">0</span></div>
+                <div class="upg-info">Cost: <span id="servo-cost">10,000</span> W</div>
+                <div class="upg-info">Converts 5% of Click Power into Passive W/s</div>
+            </div>
+
+            <!-- Heat Management Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('cooling')">
                 <div class="upg-name">- Cooling Fan <span id="cooling-level">0</span></div>
                 <div class="upg-info">Cost: <span id="cooling-cost">100</span> W</div>
@@ -107,6 +131,7 @@
                 <div class="upg-info">+0.5 Heat decay per second</div>
             </div>
 
+            <!-- Passive / Auto Upgrades -->
             <div class="upgrade-card" onclick="buyUpgrade('auto')">
                 <div class="upg-name">- Auto-Flicker AI <span id="auto-level">0</span></div>
                 <div class="upg-info">Cost: <span id="auto-cost">50</span> W</div>
@@ -132,9 +157,7 @@
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">ACHIEVEMENTS</h2>
-            <div id="achv-list">
-                <!-- Populated by JS -->
-            </div>
+            <div id="achv-list"></div>
         </div>
     </div>
 
@@ -142,7 +165,6 @@
     <audio id="audio-click" src="sounds/buttonclick.mp3" preload="auto"></audio>
     <audio id="audio-pay" src="sounds/paying.mp3" preload="auto"></audio>
     <audio id="audio-siren" src="sounds/siren.mp3" preload="auto"></audio>
-    <!-- Background Music (Loops automatically) -->
     <audio id="audio-music" src="sounds/gamemusic.mp3" loop preload="auto"></audio>
 
     <script src="save.js"></script>
