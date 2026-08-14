@@ -5,6 +5,7 @@ let sirenSound = document.getElementById('audio-siren');
 let musicSound = document.getElementById('audio-music');
 let pageClickSound = document.getElementById('audio-pageclick');
 let jackpotSound = document.getElementById('audio-jackpot');
+let hoverSound = document.getElementById('audio-hover');
 
 if (clickSound) clickSound.volume = 0.3;
 if (paySound) paySound.volume = 1.0; 
@@ -12,12 +13,14 @@ if (sirenSound) sirenSound.volume = 0.6;
 if (musicSound) musicSound.volume = 0.2; 
 if (pageClickSound) pageClickSound.volume = 0.6;
 if (jackpotSound) jackpotSound.volume = 0.8;
+if (hoverSound) hoverSound.volume = 0.4;
 
 function playClick() { if (!clickSound) return; try { clickSound.currentTime = 0; clickSound.play().catch(e=>{}); } catch(e){} }
 function playPay() { if (!paySound) return; try { paySound.currentTime = 0; paySound.play().catch(e=>{}); } catch(e){} }
 function playSiren() { if (!sirenSound) return; try { sirenSound.currentTime = 0; sirenSound.play().catch(e=>{}); } catch(e){} }
 function playPageClick() { if (!pageClickSound) return; try { pageClickSound.currentTime = 0; pageClickSound.play().catch(e=>{}); } catch(e){} }
 function playJackpot() { if (!jackpotSound) return; try { jackpotSound.currentTime = 0; jackpotSound.play().catch(e=>{}); } catch(e){} }
+function playHover() { if (!hoverSound) return; try { hoverSound.currentTime = 0; hoverSound.play().catch(e=>{}); } catch(e){} }
 
 function startMusic() { if (musicSound && musicSound.paused) { musicSound.play().catch(e=>{}); } }
 document.body.addEventListener('click', startMusic, { once: true });
@@ -392,6 +395,10 @@ function renderAchievements() {
         let card = document.createElement('div');
         card.classList.add('achv-card');
         if (achv.unlocked) card.classList.add('unlocked');
+        
+        // Attach hover sound to dynamically generated achievement cards
+        card.onmouseenter = playHover;
+        
         let icon = achv.unlocked ? '★' : '?';
         card.innerHTML = `<div class="achv-icon">${icon}</div><div class="achv-text"><h3>${achv.name}</h3><p>${achv.desc}</p></div>`;
         listEl.appendChild(card);
