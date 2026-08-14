@@ -8,7 +8,7 @@ if (sirenSound) sirenSound.volume = 0.6;
 // Placeholders for Switch Material Sounds
 // Files needed later: click_tier0.mp3, click_tier1.mp3, ... click_tier5.mp3
 const clickSounds = [
-    new Audio('sounds/click_tier0.mp3'),
+    new Audio('buttonclick.mp3'),
     new Audio('sounds/click_tier1.mp3'),
     new Audio('sounds/click_tier2.mp3'),
     new Audio('sounds/click_tier3.mp3'),
