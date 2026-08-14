@@ -12,6 +12,8 @@
 <body>
 
     <div id="vignette"></div>
+    <!-- Container for floating electricity drops -->
+    <div id="elec-drop-container"></div>
 
     <!-- ================= VIEW: GAME ================= -->
     <div id="view-game" class="view active">
@@ -67,6 +69,13 @@
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">STORE</h2>
+
+            <!-- Switch Tier Upgrade -->
+            <div class="upgrade-card" onclick="buyUpgrade('switchTier')">
+                <div class="upg-name">- Switch Material: <span id="switchTier-name">Basic</span></div>
+                <div class="upg-info">Cost: <span id="switchTier-cost">1,000</span> W</div>
+                <div class="upg-info">Upgrade switch material for massive multipliers!</div>
+            </div>
 
             <div class="upgrade-card" onclick="buyUpgrade('click')">
                 <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
@@ -130,9 +139,9 @@
     </div>
 
     <!-- Hidden Audio Elements -->
-    <audio id="audio-click" src="sounds/buttonclick.mp3" preload="auto"></audio>
     <audio id="audio-pay" src="sounds/paying.mp3" preload="auto"></audio>
     <audio id="audio-siren" src="sounds/siren.mp3" preload="auto"></audio>
+
     <script src="save.js"></script>
     <script src="script.js"></script>
 </body>
