@@ -1,28 +1,33 @@
 // --- SOUND SYSTEM ---
-// Grab the audio elements from the HTML
-let clickSound = document.getElementById('audio-click');
 let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
 
-// Set volumes
-if (clickSound) clickSound.volume = 0.3;
-if (paySound) paySound.volume = 1.0;
+if (paySound) paySound.volume = 0.8;
 if (sirenSound) sirenSound.volume = 0.6;
 
+// Placeholders for Switch Material Sounds
+// Files needed later: click_tier0.mp3, click_tier1.mp3, ... click_tier5.mp3
+const clickSounds = [
+    new Audio('sounds/click_tier0.mp3'),
+    new Audio('sounds/click_tier1.mp3'),
+    new Audio('sounds/click_tier2.mp3'),
+    new Audio('sounds/click_tier3.mp3'),
+    new Audio('sounds/click_tier4.mp3'),
+    new Audio('sounds/click_tier5.mp3')
+];
+clickSounds.forEach(s => s.volume = 0.3);
+
 function playClick() {
-    if (!clickSound) return;
     try {
-        clickSound.currentTime = 0; 
-        let playPromise = clickSound.play();
-        
+        let s = clickSounds[state.switchTier] || clickSounds[0];
+        s.currentTime = 0; 
+        let playPromise = s.play();
         if (playPromise !== undefined) {
             playPromise.catch(e => {
-                console.error("Click Sound Error: " + e.message);
+                // Silently fail if placeholder file is missing
             });
         }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+    } catch (e) {}
 }
 
 function playPay() {
@@ -30,15 +35,10 @@ function playPay() {
     try {
         paySound.currentTime = 0;
         let playPromise = paySound.play();
-        
         if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.error("Pay Sound Error: " + e.message);
-            });
+            playPromise.catch(e => console.error("Pay Sound Error: " + e.message));
         }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+    } catch (e) {}
 }
 
 function playSiren() {
@@ -46,16 +46,21 @@ function playSiren() {
     try {
         sirenSound.currentTime = 0;
         let playPromise = sirenSound.play();
-        
         if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.error("Siren Sound Error: " + e.message);
-            });
+            playPromise.catch(e => console.error("Siren Sound Error: " + e.message));
         }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+    } catch (e) {}
 }
+
+// --- SWITCH MATERIAL TIERS ---
+const switchTiers = [
+    { name: "Basic", cost: 0, mult: 1, color: "#444" },
+    { name: "Copper", cost: 1000, mult: 3, color: "#b87333" },
+    { name: "Iron", cost: 25000, mult: 10, color: "#dddddd" },
+    { name: "Gold", cost: 500000, mult: 50, color: "#ffd700" },
+    { name: "Diamond", cost: 10000000, mult: 250, color: "#00ffff" },
+    { name: "Dark Matter", cost: 250000000, mult: 1500, color: "#8a2be2" }
+];
 
 // --- GAME STATE ---
 const state = {
@@ -65,15 +70,16 @@ const state = {
     isOn: true,
     breakerTripped: false,
     capacitors: 0,
+    switchTier: 0, // NEW: Tracks current material tier
     upgrades: {
-        click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },       // Click Power
-        surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },     // Crit Chance
-        cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },      // % Heat Reduction
-        liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },    // Flat Heat Reduction
-        thermal: { level: 0, baseCost: 800, rate: 1.4, value: 0.5 },    // Heat Decay/sec
-        auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },          // Passive W/s
-        quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },     // Auto Multiplier
-        solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 }      // Flat Passive W/s
+        click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
+        surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },
+        cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },
+        liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },
+        thermal: { level: 0, baseCost: 800, rate: 1.4, value: 0.5 },
+        auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
+        quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
+        solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 }
     },
     achievements: {
         first_flick: { name: "First Flick", desc: "Generate your first Watt.", unlocked: false },
@@ -101,18 +107,19 @@ function getCost(upgKey) {
 
 function getClickPower() {
     let base = state.upgrades.click.value * (state.upgrades.click.level + 1);
+    let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
-    return base * prestigeMult;
+    return base * tierMult * prestigeMult;
 }
 
 function getCritChance() {
-    return Math.min(0.75, state.upgrades.surge.level * state.upgrades.surge.value); // Cap at 75%
+    return Math.min(0.75, state.upgrades.surge.level * state.upgrades.surge.value);
 }
 
 function getHeatPerClick() {
     let baseHeat = 2;
-    let reduction = Math.pow(0.9, state.upgrades.cooling.level); // -10% per level
-    let flatReduction = state.upgrades.liquid.level * state.upgrades.liquid.value; // -0.2 flat per level
+    let reduction = Math.pow(0.9, state.upgrades.cooling.level);
+    let flatReduction = state.upgrades.liquid.level * state.upgrades.liquid.value;
     return Math.max(0, (baseHeat * reduction) - flatReduction);
 }
 
@@ -122,16 +129,49 @@ function getHeatDecayPerSec() {
 
 function getAutoPower() {
     let autoBase = state.upgrades.auto.value * state.upgrades.auto.level;
-    let quantumMult = 1 + state.upgrades.quantum.level; // x2, x3, x4...
+    let quantumMult = 1 + state.upgrades.quantum.level;
     let solarBase = state.upgrades.solar.value * state.upgrades.solar.level;
+    let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
     
-    return ((autoBase * quantumMult) + solarBase) * prestigeMult;
+    return ((autoBase * quantumMult) + solarBase) * tierMult * prestigeMult;
 }
 
 function getPrestigeGain() {
     if (state.totalWatts < 1000000) return 0;
     return Math.floor(Math.sqrt(state.totalWatts / 1000000));
+}
+
+// --- ELECTRICITY DROPS ---
+function spawnElecDrop() {
+    if (state.breakerTripped) return;
+    
+    const drop = document.createElement('div');
+    drop.classList.add('elec-drop');
+    
+    // Random horizontal position
+    drop.style.left = `${Math.random() * 90 + 5}%`;
+    
+    // Click handler
+    drop.addEventListener('click', () => {
+        // Math: 10x click power + 20 seconds of auto power
+        let bonus = (getClickPower() * 10) + (getAutoPower() * 20);
+        
+        state.watts += bonus;
+        state.totalWatts += bonus;
+        
+        createFloatingText(`+${formatNumber(bonus)} W`, false, true);
+        drop.remove(); // Remove after clicking
+        
+        playPay(); // Reuse pay sound for collecting drop, or add a new one later
+    });
+    
+    document.getElementById('elec-drop-container').appendChild(drop);
+    
+    // Despawn after 3 seconds if not clicked
+    setTimeout(() => {
+        if (drop.parentNode) drop.remove();
+    }, 3000);
 }
 
 // --- ACTIONS ---
@@ -147,7 +187,7 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
-        rockerEl.style.background = "#ffdf00"; 
+        rockerEl.style.background = switchTiers[state.switchTier].color; // Apply Tier Color
         
         let power = getClickPower();
         let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
@@ -177,27 +217,41 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) playClick();
         
         rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
-        rockerEl.style.background = "#444"; 
+        // Keep the tier color, but remove the glow
+        rockerEl.style.background = switchTiers[state.switchTier].color; 
         rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
     }
 }
 
 function buyUpgrade(key) {
-    let cost = getCost(key);
-    if (state.watts >= cost) {
-        playPay();
+    if (key === 'switchTier') {
+        let nextTier = state.switchTier + 1;
+        if (nextTier >= switchTiers.length) return; // Max tier reached
         
-        state.watts -= cost;
-        state.upgrades[key].level++;
-        updateUI();
+        let cost = switchTiers[nextTier].cost;
+        if (state.watts >= cost) {
+            playPay();
+            state.watts -= cost;
+            state.switchTier = nextTier;
+            
+            // Update switch visual immediately
+            document.getElementById('switch-rocker').style.background = switchTiers[state.switchTier].color;
+            updateUI();
+        }
+    } else {
+        let cost = getCost(key);
+        if (state.watts >= cost) {
+            playPay();
+            state.watts -= cost;
+            state.upgrades[key].level++;
+            updateUI();
+        }
     }
 }
 
 function tripBreaker() {
     state.breakerTripped = true;
     state.heat = 0;
-    
-    // Play the siren sound!
     playSiren();
     
     document.getElementById('breaker-overlay').style.display = 'flex';
@@ -229,11 +283,13 @@ function doPrestige() {
     state.watts = 0;
     state.totalWatts = 0;
     state.heat = 0;
+    state.switchTier = 0; // Reset tier on prestige
     for (const key in state.upgrades) {
         state.upgrades[key].level = 0;
     }
     
     document.getElementById('capacitors-display').style.display = 'block';
+    document.getElementById('switch-rocker').style.background = switchTiers[0].color;
     updateUI();
 }
 
@@ -287,10 +343,11 @@ function formatNumber(num) {
     return scaled.toFixed(2) + suffixes[tier];
 }
 
-function createFloatingText(text, isCrit = false) {
+function createFloatingText(text, isCrit = false, isElec = false) {
     const el = document.createElement('div');
     el.classList.add('float-text');
     if (isCrit) el.classList.add('crit');
+    if (isElec) el.classList.add('elec');
     el.innerText = text;
     el.style.left = `${Math.random() * 60 - 30}px`;
     document.getElementById('float-container').appendChild(el);
@@ -309,6 +366,30 @@ function updateUI() {
     let vignetteOpacity = Math.max(0, (state.heat - 50) / 50);
     document.getElementById('vignette').style.boxShadow = `inset 0 0 200px rgba(255, 0, 0, ${vignetteOpacity})`;
 
+    // Update Switch Tier UI
+    let nextTier = state.switchTier + 1;
+    let tierNameEl = document.getElementById('switchTier-name');
+    let tierCostEl = document.getElementById('switchTier-cost');
+    let tierCard = document.querySelector(`.upgrade-card[onclick="buyUpgrade('switchTier')"]`);
+
+    if (nextTier < switchTiers.length) {
+        if(tierNameEl) tierNameEl.innerText = switchTiers[nextTier].name;
+        if(tierCostEl) tierCostEl.innerText = formatNumber(switchTiers[nextTier].cost);
+        if(tierCard) {
+            if (state.watts >= switchTiers[nextTier].cost) tierCard.classList.remove('disabled');
+            else tierCard.classList.add('disabled');
+        }
+    } else {
+        // Max tier reached
+        if(tierNameEl) tierNameEl.innerText = "MAX";
+        if(tierCostEl) tierCostEl.innerText = "---";
+        if(tierCard) {
+            tierCard.classList.add('disabled');
+            tierCard.style.opacity = "0.5";
+        }
+    }
+
+    // Update standard upgrades
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
@@ -356,6 +437,14 @@ setInterval(() => {
     
     updateUI();
 }, 100);
+
+// --- ELECTRICITY DROP SPAWN LOOP ---
+setInterval(() => {
+    // 25% chance every 15 seconds to spawn a drop
+    if (Math.random() < 0.25) {
+        spawnElecDrop();
+    }
+}, 15000);
 
 // Init
 toggleSwitch(true); 
