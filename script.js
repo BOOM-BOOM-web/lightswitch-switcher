@@ -5,7 +5,7 @@ const SaveManager = {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
     },
-    load() {
+        load() {
         const data = localStorage.getItem(this.key);
         if (!data) return;
         try {
@@ -20,6 +20,21 @@ const SaveManager = {
             state.breakerTripped = false;
             state.isRebirthing = false;
 
+            // --- FIX: Re-apply switch textures and toggle state after loading ---
+            applySwitchVisuals();
+            let rockerEl = document.getElementById('switch-rocker');
+            if (state.isOn) {
+                rockerEl.style.transform = "perspective(150px) rotateX(-25deg)";
+                rockerEl.style.filter = "brightness(1.3)"; 
+                let power = getClickPower();
+                let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
+                rockerEl.style.boxShadow = `0 0 ${glowIntensity}px ${glowIntensity/2}px rgba(255, 223, 0, 0.8)`;
+            } else {
+                rockerEl.style.transform = "perspective(150px) rotateX(25deg)";
+                rockerEl.style.filter = "brightness(0.6)"; 
+                rockerEl.style.boxShadow = "0 4px 4px rgba(0,0,0,0.4)";
+            }
+
             const now = Date.now();
             const lastSaved = savedState.lastSaved || now;
             const secondsPassed = Math.min(28800, (now - lastSaved) / 1000);
@@ -30,6 +45,13 @@ const SaveManager = {
                 state.watts += offlineEarnings;
                 state.totalWatts += offlineEarnings;
                 this.showOfflinePopup(secondsPassed, offlineEarnings);
+            }
+            updateUI();
+        } catch(e) {
+            console.error("Save file corrupted, resetting.", e);
+            localStorage.removeItem(this.key);
+        }
+    },
             }
             updateUI();
         } catch(e) {
