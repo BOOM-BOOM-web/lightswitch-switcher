@@ -4,25 +4,18 @@ let paySound = document.getElementById('audio-pay');
 let sirenSound = document.getElementById('audio-siren');
 let musicSound = document.getElementById('audio-music');
 
-// Set volumes
 if (clickSound) clickSound.volume = 0.3;
-if (paySound) paySound.volume = 1.0; // Turned up as requested previously
+if (paySound) paySound.volume = 1.0; 
 if (sirenSound) sirenSound.volume = 0.6;
-if (musicSound) musicSound.volume = 0.2; // Background music should be quiet
+if (musicSound) musicSound.volume = 0.2; 
 
 function playClick() {
     if (!clickSound) return;
     try {
         clickSound.currentTime = 0; 
         let playPromise = clickSound.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.error("Click Sound Error: " + e.message);
-            });
-        }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+        if (playPromise !== undefined) { playPromise.catch(e => {}); }
+    } catch (e) {}
 }
 
 function playPay() {
@@ -30,14 +23,8 @@ function playPay() {
     try {
         paySound.currentTime = 0;
         let playPromise = paySound.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.error("Pay Sound Error: " + e.message);
-            });
-        }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+        if (playPromise !== undefined) { playPromise.catch(e => {}); }
+    } catch (e) {}
 }
 
 function playSiren() {
@@ -45,23 +32,15 @@ function playSiren() {
     try {
         sirenSound.currentTime = 0;
         let playPromise = sirenSound.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(e => {
-                console.error("Siren Sound Error: " + e.message);
-            });
-        }
-    } catch (e) {
-        console.error("Audio system error:", e);
-    }
+        if (playPromise !== undefined) { playPromise.catch(e => {}); }
+    } catch (e) {}
 }
 
-// Start music on first click (Browsers block auto-play otherwise)
 function startMusic() {
     if (musicSound && musicSound.paused) {
-        musicSound.play().catch(e => console.warn("Music autoplay blocked until user clicks."));
+        musicSound.play().catch(e => {});
     }
 }
-// Listen for the very first click on the body to start the music
 document.body.addEventListener('click', startMusic, { once: true });
 
 // --- SWITCH MATERIAL TIERS ---
@@ -85,10 +64,16 @@ const state = {
     switchTier: 0, 
     upgrades: {
         click: { level: 0, baseCost: 10, rate: 1.15, value: 1 },
+        voltage: { level: 0, baseCost: 5000, rate: 1.6, value: 5 },        // NEW: +5x flat mult
         surge: { level: 0, baseCost: 500, rate: 1.3, value: 0.01 },
+        overcharge: { level: 0, baseCost: 20000, rate: 2.0, value: 5 },    // NEW: +5x to crit multiplier
+        thermoGen: { level: 0, baseCost: 50000, rate: 1.8, value: 0.01 },  // NEW: 1% click boost per 1% heat
+        servo: { level: 0, baseCost: 10000, rate: 1.7, value: 0.05 },      // NEW: 5% of click power -> W/s
+        
         cooling: { level: 0, baseCost: 100, rate: 1.5, value: 2 },
         liquid: { level: 0, baseCost: 2000, rate: 1.6, value: 0.2 },
         thermal: { level: 0, baseCost: 800, rate: 1.4, value: 0.5 },
+        
         auto: { level: 0, baseCost: 50, rate: 1.2, value: 2 },
         quantum: { level: 0, baseCost: 5000, rate: 1.8, value: 1 },
         solar: { level: 0, baseCost: 1000, rate: 1.25, value: 50 }
@@ -119,13 +104,19 @@ function getCost(upgKey) {
 
 function getClickPower() {
     let base = state.upgrades.click.value * (state.upgrades.click.level + 1);
+    let voltMult = 1 + (state.upgrades.voltage.level * state.upgrades.voltage.value); // +5x per level
+    let thermoMult = 1 + (state.heat * state.upgrades.thermoGen.level * state.upgrades.thermoGen.value); // Scales with heat!
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
-    return base * tierMult * prestigeMult;
+    return base * voltMult * thermoMult * tierMult * prestigeMult;
 }
 
 function getCritChance() {
     return Math.min(0.75, state.upgrades.surge.level * state.upgrades.surge.value);
+}
+
+function getCritMult() {
+    return 10 + (state.upgrades.overcharge.level * state.upgrades.overcharge.value); // Base 10x, +5x per level
 }
 
 function getHeatPerClick() {
@@ -146,7 +137,10 @@ function getAutoPower() {
     let tierMult = switchTiers[state.switchTier].mult;
     let prestigeMult = 1 + (state.capacitors * 0.1);
     
-    return ((autoBase * quantumMult) + solarBase) * tierMult * prestigeMult;
+    // Servo Motor: Converts a % of Click Power into Passive W/s
+    let servoConversion = getClickPower() * (state.upgrades.servo.level * state.upgrades.servo.value);
+    
+    return ((autoBase * quantumMult) + solarBase + servoConversion) * tierMult * prestigeMult;
 }
 
 function getPrestigeGain() {
@@ -202,7 +196,7 @@ function toggleSwitch(isAuto = false) {
         if(!isAuto) {
             let isCrit = Math.random() < getCritChance();
             if (isCrit) {
-                power *= 10;
+                power *= getCritMult(); // Use dynamic crit multiplier
             }
 
             state.watts += power;
@@ -388,7 +382,7 @@ function updateUI() {
         }
     }
 
-    // Update standard upgrades
+    // Update standard upgrades (Dynamically handles all new upgrades too!)
     for (const key in state.upgrades) {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`);
