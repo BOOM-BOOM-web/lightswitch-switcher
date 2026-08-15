@@ -1,6 +1,6 @@
 // --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v3',
+    key: 'flipTheSwitch_v4', // Bumped to v4 for clean start
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
@@ -53,20 +53,7 @@ const SaveManager = {
     },
     showOfflinePopup(seconds, earnings) {
         const popup = document.createElement('div');
-        popup.style.position = 'fixed';
-        popup.style.top = '50%';
-        popup.style.left = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
-        popup.style.background = '#000';
-        popup.style.border = '4px solid #ffdf00';
-        popup.style.boxShadow = '6px 6px 0px #000';
-        popup.style.padding = '30px';
-        popup.style.zIndex = '1000';
-        popup.style.textAlign = 'center';
-        popup.style.color = '#fff';
-        popup.style.fontFamily = "'Press Start 2P', cursive";
-        popup.style.maxWidth = '90%';
-        popup.style.boxSizing = 'border-box';
+        popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--panel-color);border:1px solid var(--accent);box-shadow:0 0 30px rgba(246,201,69,0.3);padding:30px;z-index:1000;text-align:center;color:#fff;font-family:'Rajdhani',sans-serif;border-radius:8px;backdrop-filter:blur(10px);`;
 
         const hours = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
@@ -77,15 +64,13 @@ const SaveManager = {
         timeStr += `${secs}s`;
 
         popup.innerHTML = `
-            <h2 style="color:#ffdf00; font-size: 1.2rem; margin-bottom: 20px;">WELCOME BACK</h2>
-            <p style="font-size: 0.7rem; color: #cccccc; margin-bottom: 15px;">You were away for:<br><span style="color:#fff; font-size: 0.9rem;">${timeStr}</span></p>
-            <p style="font-size: 0.8rem; color:#00ffff; margin-bottom: 25px;">Your grid produced:<br><span style="font-size: 1.1rem;">${formatNumber(earnings)} W</span></p>
-            <button id="collect-btn" style="background:#ffdf00; color:#000; border:none; padding:12px 20px; font-family:inherit; font-size:0.8rem; cursor:pointer;">COLLECT</button>
+            <h2 style="color:var(--accent);font-size:1.5rem;margin-bottom:20px;">WELCOME BACK</h2>
+            <p style="font-size:1.1rem;color:var(--text-dim);margin-bottom:15px;">You were away for:<br><span style="color:#fff;font-size:1.4rem;font-weight:700;">${timeStr}</span></p>
+            <p style="font-size:1.2rem;color:var(--accent-cyan);margin-bottom:25px;">Your grid produced:<br><span style="font-size:1.8rem;font-weight:700;">${formatNumber(earnings)} W</span></p>
+            <button id="collect-btn" style="background:var(--accent);color:#000;border:none;padding:12px 30px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:1.2rem;cursor:pointer;border-radius:4px;">COLLECT</button>
         `;
         document.body.appendChild(popup);
-        document.getElementById('collect-btn').addEventListener('click', () => {
-            popup.remove();
-        });
+        document.getElementById('collect-btn').addEventListener('click', () => popup.remove());
     },
     initSaveLoop() {
         setInterval(() => this.save(), 15000);
@@ -93,42 +78,10 @@ const SaveManager = {
     }
 };
 
-// Fixed: Bulletproof reset function
 function resetSave() {
-    if (confirm("Are you sure you want to wipe ALL save data? This cannot be undone.")) {
-        // 1. Destroy all browser storage
-        try {
-            localStorage.clear();
-            sessionStorage.clear();
-        } catch(e) {
-            console.error("Storage clear error:", e);
-        }
-        
-        // 2. Manually wipe the state object in memory
-        state.watts = 0;
-        state.totalWatts = 0;
-        state.heat = 0;
-        state.isOn = true;
-        state.breakerTripped = false;
-        state.capacitors = 0;
-        state.switchTier = 0;
-        state.overdriveActive = false;
-        state.lastDailyClaim = 0;
-        state.isRebirthing = false;
-        state.endgameUnlocked = false;
-        state.rebirthTree = {};
-        
-        for (const key in state.upgrades) {
-            state.upgrades[key].level = 0;
-        }
-        for (const key in state.achievements) {
-            state.achievements[key].unlocked = false;
-        }
-        for (const key in state.endgame) {
-            state.endgame[key].completed = false;
-        }
-        
-        // 3. Force a hard reload (bypasses browser cache)
+    if (confirm("Wipe ALL save data? This cannot be undone.")) {
+        localStorage.clear();
+        sessionStorage.clear();
         window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
     }
 }
@@ -234,109 +187,8 @@ const state = {
         titan: { name: "Titan", desc: "Reach 1 Trillion Total Watts.", mult: 2, completed: false },
         cosmic: { name: "Cosmic", desc: "Reach 1 Quadrillion Total Watts.", mult: 5, completed: false },
         infinity: { name: "Infinity", desc: "Reach 1 Quintillion Total Watts.", mult: 50, completed: false }
-    },
-    rebirthTree: {} 
+    }
 };
-
-// --- REBIRTH TREE GENERATION ---
-const treeNodes = [];
-for(let i=0; i<100; i++) {
-    let tier = Math.floor(i / 10);
-    let reqs = [];
-    if (i % 10 !== 0) reqs.push(i - 1);
-    if (tier > 0) reqs.push(i - 10);
-    let cost = 1 + tier;
-    let effect = (i === 99) ? 1000 : (1 + tier * 0.01); 
-    treeNodes.push({ id: i, tier, reqs, cost, effect });
-}
-
-function getTreeNodeColor(tier) {
-    const colors = ['#ffdf00', '#00ffff', '#ff3333', '#ff8c00', '#8a2be2', '#33ff33', '#ff00ff', '#00ff00', '#0000ff', '#ffffff'];
-    return colors[tier % colors.length];
-}
-
-function getRebirthMult() {
-    let mult = 1;
-    for(let id in state.rebirthTree) {
-        let node = treeNodes[id];
-        if (node) mult *= node.effect;
-    }
-    return mult;
-}
-
-function renderRebirthTree() {
-    const container = document.getElementById('rebirth-tree-container');
-    const svg = document.getElementById('tree-svg');
-    container.innerHTML = '';
-    svg.innerHTML = '';
-    document.getElementById('rebirth-caps-display').innerText = `Capacitors: ${state.capacitors}`;
-
-    treeNodes.forEach(node => {
-        let isPurchased = state.rebirthTree[node.id] !== undefined;
-        let isAvailable = node.reqs.every(reqId => state.rebirthTree[reqId] !== undefined);
-        
-        let div = document.createElement('div');
-        div.classList.add('tree-node');
-        div.style.left = `${(node.id % 10) * 120 + 60}px`;
-        div.style.top = `${Math.floor(node.id / 10) * 120 + 60}px`;
-        
-        if (isPurchased) {
-            div.classList.add('purchased');
-            div.style.backgroundColor = getTreeNodeColor(node.tier);
-        } else if (isAvailable) {
-            div.classList.add('available');
-            div.style.backgroundColor = getTreeNodeColor(node.tier);
-            div.onclick = () => buyTreeNode(node.id);
-        } else {
-            div.classList.add('locked');
-        }
-        
-        let tooltip = document.createElement('span');
-        tooltip.classList.add('tree-tooltip');
-        let effectText = node.id === 99 ? `x${node.effect} ALL` : `+${(node.effect - 1) * 100}% ALL`;
-        tooltip.innerText = `Node ${node.id + 1}\nCost: ${node.cost} Cap\nEffect: ${effectText}`;
-        div.appendChild(tooltip);
-        
-        container.appendChild(div);
-        
-        node.reqs.forEach(reqId => {
-            if (state.rebirthTree[reqId] !== undefined) {
-                let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                let p1x = (reqId % 10) * 120 + 60;
-                let p1y = Math.floor(reqId / 10) * 120 + 60;
-                let p2x = (node.id % 10) * 120 + 60;
-                let p2y = Math.floor(node.id / 10) * 120 + 60;
-                line.setAttribute('x1', p1x); line.setAttribute('y1', p1y);
-                line.setAttribute('x2', p2x); line.setAttribute('y2', p2y);
-                line.setAttribute('class', 'tree-line active');
-                svg.appendChild(line);
-            }
-        });
-    });
-}
-
-function buyTreeNode(id) {
-    let node = treeNodes[id];
-    if (state.rebirthTree[id] === undefined && state.capacitors >= node.cost) {
-        state.capacitors -= node.cost;
-        state.rebirthTree[id] = true;
-        playPay();
-        renderRebirthTree();
-        updateUI();
-    }
-}
-
-function finishRebirth() {
-    playPageClick();
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-game').classList.add('active');
-    state.isRebirthing = false;
-    state.overdriveActive = true;
-    applySwitchVisuals();
-    updateUI();
-    createFloatingText(`OVERDRIVE ACTIVE!`, false, true);
-    setTimeout(() => { state.overdriveActive = false; }, 120000);
-}
 
 // --- VIEW SYSTEM ---
 function switchView(viewId) {
@@ -363,11 +215,10 @@ function getClickPower() {
     let prestigeMult = 1 + (state.capacitors * 0.1);
     let achvMult = getAchievementMult();
     let endgameMult = getEndgameMult();
-    let rebirthMult = getRebirthMult();
     let entanglerMult = 1 + (state.upgrades.entangler.level * state.upgrades.entangler.value);
     let overdriveMult = state.overdriveActive ? 2 : 1;
     
-    return base * voltMult * fluxMult * singularityMult * thermoMult * tierMult * prestigeMult * achvMult * endgameMult * rebirthMult * entanglerMult * overdriveMult;
+    return base * voltMult * fluxMult * singularityMult * thermoMult * tierMult * prestigeMult * achvMult * endgameMult * entanglerMult * overdriveMult;
 }
 
 function getCritChance() {
@@ -397,13 +248,12 @@ function getAutoPower() {
     let prestigeMult = 1 + (state.capacitors * 0.1);
     let achvMult = getAchievementMult();
     let endgameMult = getEndgameMult();
-    let rebirthMult = getRebirthMult();
     let entanglerMult = 1 + (state.upgrades.entangler.level * state.upgrades.entangler.value);
     let overdriveMult = state.overdriveActive ? 2 : 1;
     
     let servoConversion = getClickPower() * ((state.upgrades.servo.level * state.upgrades.servo.value) + (state.upgrades.infinity.level * state.upgrades.infinity.value));
     
-    return ((autoBase * quantumMult * fusionMult) + solarBase + plasmaBase + darkEnergyBase + servoConversion) * tierMult * prestigeMult * achvMult * endgameMult * rebirthMult * entanglerMult * overdriveMult;
+    return ((autoBase * quantumMult * fusionMult) + solarBase + plasmaBase + darkEnergyBase + servoConversion) * tierMult * prestigeMult * achvMult * endgameMult * entanglerMult * overdriveMult;
 }
 
 function getPrestigeGain() { if (state.totalWatts < 10000000) return 0; return Math.floor(Math.sqrt(state.totalWatts / 10000000)); }
@@ -448,7 +298,7 @@ function toggleSwitch(isAuto = false) {
         let power = getClickPower();
         let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
         rockerEl.style.boxShadow = `0 0 ${glowIntensity}px ${glowIntensity/2}px rgba(255, 223, 0, 0.8)`;
-        boltEl.style.opacity = 0.9; setTimeout(() => boltEl.style.opacity = 0.6, 100);
+        boltEl.style.opacity = 0.2; setTimeout(() => boltEl.style.opacity = 0.1, 100);
         if(!isAuto) {
             let isCrit = Math.random() < getCritChance(); if (isCrit) power *= getCritMult(); 
             state.watts += power; state.totalWatts += power; state.heat += getHeatPerClick();
@@ -486,13 +336,13 @@ function tripBreaker() {
             clearInterval(rebootInterval);
             document.getElementById('reboot-fill').style.width = '0%';
             document.getElementById('breaker-overlay').style.display = 'none';
-            document.getElementById('lightning-bolt').style.opacity = 0.6; 
+            document.getElementById('lightning-bolt').style.opacity = 0.2; 
             state.breakerTripped = false; state.isOn = false; toggleSwitch(true); 
         }
     }, 100);
 }
 
-// --- PRESTIGE / REBIRTH ---
+// --- PRESTIGE / OVERLOAD ---
 function doPrestige() {
     let gain = getPrestigeGain(); if (gain < 1) return;
     state.isRebirthing = true;
@@ -510,10 +360,13 @@ function doPrestige() {
         overlay.classList.remove('active');
         document.body.classList.remove('shake');
         state.capacitors += gain; 
+        state.overdriveActive = true;
         
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('view-rebirth').classList.add('active');
-        applySwitchVisuals(); renderRebirthTree(); updateUI();
+        document.getElementById('view-game').classList.add('active');
+        applySwitchVisuals(); updateUI();
+        createFloatingText(`OVERDRIVE ACTIVE!`, false, true);
+        setTimeout(() => { state.overdriveActive = false; }, 120000);
     }, 1500);
 }
 
@@ -573,9 +426,7 @@ function renderAchievements() {
 // --- UI UPDATES ---
 function formatNumber(num) {
     if (num === Infinity || isNaN(num)) return "∞";
-    if (num < 1e6) {
-        return Math.floor(num).toLocaleString();
-    }
+    if (num < 1e6) return Math.floor(num).toLocaleString();
     if (num < 1e9) return (num / 1e6).toFixed(2) + "M";
     if (num < 1e12) return (num / 1e9).toFixed(2) + "B";
     if (num < 1e15) return (num / 1e12).toFixed(2) + "T";
@@ -587,7 +438,7 @@ function formatNumber(num) {
 function createFloatingText(text, isCrit = false, isElec = false) {
     const el = document.createElement('div'); el.classList.add('float-text');
     if (isCrit) el.classList.add('crit'); if (isElec) el.classList.add('elec');
-    el.innerText = text; el.style.left = `${Math.random() * 60 - 30}px`;
+    el.innerText = text; el.style.left = `${Math.random() * 60 + 20}%`;
     document.getElementById('float-container').appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }
