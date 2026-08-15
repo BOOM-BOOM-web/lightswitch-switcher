@@ -1,6 +1,6 @@
 // --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v7', // Bumped to v7 to wipe any broken data
+    key: 'flipTheSwitch_v8', // Bumped to v8 for a clean slate
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
@@ -473,11 +473,8 @@ function updateUI() {
         let cost = getCost(key);
         let levelEl = document.getElementById(`${key}-level`); let costEl = document.getElementById(`${key}-cost`);
         let card = document.querySelector(`.upgrade-card[onclick="buyUpgrade('${key}')"]`);
-        
-        // FIXED: Correctly assigns the level and cost to their own elements
         if (levelEl) levelEl.innerText = state.upgrades[key].level;
         if (costEl) costEl.innerText = formatNumber(cost);
-        
         if (card) { if (state.watts >= cost) card.classList.remove('disabled'); else card.classList.add('disabled'); }
     }
 
