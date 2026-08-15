@@ -30,51 +30,42 @@
     </div>
 
     <div id="view-game" class="view active">
-        <!-- LEFT COLUMN: Stats & Menu -->
-        <div id="left-col">
-            <div id="stats-container">
-                <div id="watts-display">0 W</div>
-                <div id="watts-per-sec">per second: 0.0</div>
-                <div id="capacitors-display">0 Capacitors</div>
-            </div>
+        <div id="stats-container">
+            <div id="watts-display">0 W</div>
+            <div id="watts-per-sec">per second: 0.0</div>
+            <div id="capacitors-display">0 Capacitors</div>
+        </div>
 
-            <div id="menu-buttons">
-                <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
-                <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
-                <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
+        <div id="menu-buttons">
+            <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
+            <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
+            <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
+        </div>
+
+        <div id="lightning-container">
+            <svg id="lightning-bolt" viewBox="0 0 100 100">
+                <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
+            </svg>
+        </div>
+
+        <div id="switch-container" onclick="toggleSwitch()">
+            <div id="switch-plate">
+                <div class="screw top"></div>
+                <div id="switch-rocker"></div>
+                <div class="screw bottom"></div>
             </div>
         </div>
 
-        <!-- CENTER COLUMN: Switch & Lightning -->
-        <div id="center-col">
-            <div id="lightning-container">
-                <svg id="lightning-bolt" viewBox="0 0 100 100">
-                    <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
-                </svg>
-            </div>
-
-            <div id="switch-container" onclick="toggleSwitch()">
-                <div id="switch-plate">
-                    <div class="screw top"></div>
-                    <div id="switch-rocker"></div>
-                    <div class="screw bottom"></div>
-                </div>
-            </div>
-
-            <div id="heat-container">
-                <div id="heat-bar"></div>
-            </div>
+        <div id="heat-container">
+            <div id="heat-bar"></div>
         </div>
 
-        <!-- RIGHT COLUMN: Prestige -->
-        <div id="right-col">
-            <div id="prestige-container">
-                <div id="prestige-info">
-                    <div>OVERLOAD GRID</div>
-                    <div>Bonus: <span id="prestige-bonus">0%</span> | Gain: <span id="prestige-gain">0</span></div>
-                </div>
-                <button id="prestige-btn" onclick="doPrestige()" disabled>OVERLOAD</button>
+        <div id="prestige-container">
+            <div id="prestige-info">
+                <div>OVERLOAD GRID</div>
+                <div>Bonus: <span id="prestige-bonus">0%</span> | Gain: <span id="prestige-gain">0</span></div>
             </div>
+            <button id="prestige-btn" onclick="doPrestige()" disabled>OVERLOAD</button>
         </div>
 
         <div id="float-container" style="position: absolute; top: 40%; left: 50%; width: 1px; height: 1px; z-index: 10;"></div>
@@ -188,27 +179,27 @@
             </div>
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('darkEnergy')">
                 <div class="upg-name">- Dark Energy Cell <span id="darkEnergy-level">0</span></div>
-                <div class="upg-info">Cost: <span id="darkEnergy-cost">1,000,000,000</span> W</div>
+                <div class="upg-info">Cost: <span id="darkEnergy-cost">1B</span> W</div>
                 <div class="upg-info">+100 Passive W/s</div>
             </div>
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('singularity')">
                 <div class="upg-name">- Singularity Engine <span id="singularity-level">0</span></div>
-                <div class="upg-info">Cost: <span id="singularity-cost">5,000,000,000</span> W</div>
+                <div class="upg-info">Cost: <span id="singularity-cost">5B</span> W</div>
                 <div class="upg-info">+2x Flat Multiplier to Click Power</div>
             </div>
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('neutronium')">
                 <div class="upg-name">- Neutronium Casing <span id="neutronium-level">0</span></div>
-                <div class="upg-info">Cost: <span id="neutronium-cost">25,000,000,000</span> W</div>
+                <div class="upg-info">Cost: <span id="neutronium-cost">25B</span> W</div>
                 <div class="upg-info">-0.2 Flat heat per click</div>
             </div>
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('cryo')">
                 <div class="upg-name">- Cryo Reactor <span id="cryo-level">0</span></div>
-                <div class="upg-info">Cost: <span id="cryo-cost">100,000,000,000</span> W</div>
+                <div class="upg-info">Cost: <span id="cryo-cost">100B</span> W</div>
                 <div class="upg-info">+1.0 Heat decay per second</div>
             </div>
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('infinity')">
                 <div class="upg-name">- Infinity Coil <span id="infinity-level">0</span></div>
-                <div class="upg-info">Cost: <span id="infinity-cost">500,000,000,000</span> W</div>
+                <div class="upg-info">Cost: <span id="infinity-cost">500B</span> W</div>
                 <div class="upg-info">Converts 2% of Click Power into Passive W/s</div>
             </div>
         </div>
