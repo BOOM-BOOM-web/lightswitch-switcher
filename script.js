@@ -1,6 +1,6 @@
 // --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v5', // Bumped to v5 for the new layout
+    key: 'flipTheSwitch_v6', // Bumped to v6 to wipe the broken save completely
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
@@ -53,7 +53,7 @@ const SaveManager = {
     },
     showOfflinePopup(seconds, earnings) {
         const popup = document.createElement('div');
-        popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000;border:4px solid var(--accent);box-shadow:8px 8px 0px #000;padding:30px;z-index:1000;text-align:center;color:#fff;font-family:'Press Start 2P',cursive;border-radius:4px;`;
+        popup.style.cssText = `position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#000;border:4px solid var(--accent);box-shadow:6px 6px 0px #000;padding:30px;z-index:1000;text-align:center;color:#fff;font-family:'Press Start 2P',cursive;border-radius:4px;`;
 
         const hours = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
@@ -64,10 +64,10 @@ const SaveManager = {
         timeStr += `${secs}s`;
 
         popup.innerHTML = `
-            <h2 style="color:var(--accent);font-size:1rem;margin-bottom:20px;">WELCOME BACK</h2>
-            <p style="font-size:0.6rem;color:#ccc;margin-bottom:15px;">You were away for:<br><span style="color:#fff;font-size:0.9rem;">${timeStr}</span></p>
-            <p style="font-size:0.7rem;color:var(--accent-cyan);margin-bottom:25px;">Your grid produced:<br><span style="font-size:1.1rem;">${formatNumber(earnings)} W</span></p>
-            <button id="collect-btn" style="background:var(--accent);color:#000;border:none;padding:12px 20px;font-family:inherit;font-size:0.7rem;cursor:pointer;">COLLECT</button>
+            <h2 style="color:#ffdf00;font-size:1.2rem;margin-bottom:20px;">WELCOME BACK</h2>
+            <p style="font-size:0.7rem;color:#ccc;margin-bottom:15px;">You were away for:<br><span style="color:#fff;font-size:0.9rem;">${timeStr}</span></p>
+            <p style="font-size:0.8rem;color:#00ffff;margin-bottom:25px;">Your grid produced:<br><span style="font-size:1.1rem;">${formatNumber(earnings)} W</span></p>
+            <button id="collect-btn" style="background:#ffdf00;color:#000;border:none;padding:12px 20px;font-family:inherit;font-size:0.8rem;cursor:pointer;">COLLECT</button>
         `;
         document.body.appendChild(popup);
         document.getElementById('collect-btn').addEventListener('click', () => popup.remove());
@@ -80,8 +80,10 @@ const SaveManager = {
 
 function resetSave() {
     if (confirm("Wipe ALL save data? This cannot be undone.")) {
-        localStorage.clear();
-        sessionStorage.clear();
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch(e) {}
         window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
     }
 }
@@ -169,7 +171,10 @@ const state = {
         antimatter: { level: 0, baseCost: 50000000, rate: 2.2, value: 0.01 },
         entangler: { level: 0, baseCost: 250000000, rate: 2.5, value: 0.15 },
         darkEnergy: { level: 0, baseCost: 1000000000, rate: 2.0, value: 100 }, 
-        singularity: { level: 0, baseCost: 5000000000, rate: 2.4, value: 2 } 
+        singularity: { level: 0, baseCost: 5000000000, rate: 2.4, value: 2 }, 
+        neutronium: { level: 0, baseCost: 25000000000, rate: 2.1, value: 0.2 },
+        cryo: { level: 0, baseCost: 100000000000, rate: 2.0, value: 1.0 },
+        infinity: { level: 0, baseCost: 500000000000, rate: 2.3, value: 0.02 }
     },
     achievements: {
         first_flick: { name: "First Flick", desc: "Generate your first Watt.", unlocked: false },
@@ -295,7 +300,7 @@ function toggleSwitch(isAuto = false) {
         let power = getClickPower();
         let glowIntensity = Math.min(80, Math.log10(power + 1) * 20);
         rockerEl.style.boxShadow = `0 0 ${glowIntensity}px ${glowIntensity/2}px rgba(255, 223, 0, 0.8)`;
-        boltEl.style.opacity = 0.3; setTimeout(() => boltEl.style.opacity = 0.2, 100);
+        boltEl.style.opacity = 0.9; setTimeout(() => boltEl.style.opacity = 0.6, 100);
         if(!isAuto) {
             let isCrit = Math.random() < getCritChance(); if (isCrit) power *= getCritMult(); 
             state.watts += power; state.totalWatts += power; state.heat += getHeatPerClick();
@@ -333,7 +338,7 @@ function tripBreaker() {
             clearInterval(rebootInterval);
             document.getElementById('reboot-fill').style.width = '0%';
             document.getElementById('breaker-overlay').style.display = 'none';
-            document.getElementById('lightning-bolt').style.opacity = 0.3; 
+            document.getElementById('lightning-bolt').style.opacity = 0.6; 
             state.breakerTripped = false; state.isOn = false; toggleSwitch(true); 
         }
     }, 100);
@@ -360,7 +365,7 @@ function doPrestige() {
         state.overdriveActive = true;
         
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById('left-panel').classList.add('active');
+        document.getElementById('view-game').classList.add('active');
         applySwitchVisuals(); updateUI();
         createFloatingText(`OVERDRIVE ACTIVE!`, false, true);
         setTimeout(() => { state.overdriveActive = false; }, 120000);
@@ -435,7 +440,7 @@ function formatNumber(num) {
 function createFloatingText(text, isCrit = false, isElec = false) {
     const el = document.createElement('div'); el.classList.add('float-text');
     if (isCrit) el.classList.add('crit'); if (isElec) el.classList.add('elec');
-    el.innerText = text; el.style.left = `${Math.random() * 60 + 20}%`;
+    el.innerText = text; el.style.left = `${Math.random() * 60 - 30}px`;
     document.getElementById('float-container').appendChild(el);
     setTimeout(() => el.remove(), 1000);
 }
