@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="mobile.css"> <!-- ADD THIS LINE -->
+    <link rel="stylesheet" href="mobile.css">
 </head>
 <body>
 
@@ -25,9 +25,9 @@
         <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY BONUS</button>
     </div>
 
-    <!-- Emergency Reset Button -->
+    <!-- Emergency Reset Button (Un-breakable inline JS) -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-        <button onclick="resetSave()" style="background: #ff3333; color: #fff; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; cursor: pointer;">RESET SAVE</button>
+        <button onclick="if(confirm('Wipe ALL save data? This cannot be undone.')){localStorage.clear();window.location.reload();}" style="background: #ff3333; color: #fff; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; cursor: pointer;">RESET SAVE</button>
     </div>
 
     <div id="view-game" class="view active">
