@@ -21,7 +21,7 @@
     </div>
 
     <div id="daily-reward-container">
-        <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY BONUS</button>
+        <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY</button>
     </div>
 
     <!-- Emergency Reset Button -->
@@ -30,42 +30,51 @@
     </div>
 
     <div id="view-game" class="view active">
-        <div id="stats-container">
-            <div id="watts-display">0 W</div>
-            <div id="watts-per-sec">per second: 0.0</div>
-            <div id="capacitors-display">0 Capacitors</div>
-        </div>
+        <!-- LEFT COLUMN: Stats & Menu -->
+        <div id="left-col">
+            <div id="stats-container">
+                <div id="watts-display">0 W</div>
+                <div id="watts-per-sec">per second: 0.0</div>
+                <div id="capacitors-display">0 Capacitors</div>
+            </div>
 
-        <div id="menu-buttons">
-            <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
-            <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
-            <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
-        </div>
-
-        <div id="lightning-container">
-            <svg id="lightning-bolt" viewBox="0 0 100 100">
-                <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
-            </svg>
-        </div>
-
-        <div id="switch-container" onclick="toggleSwitch()">
-            <div id="switch-plate">
-                <div class="screw top"></div>
-                <div id="switch-rocker"></div>
-                <div class="screw bottom"></div>
+            <div id="menu-buttons">
+                <button class="menu-btn" onclick="switchView('view-shop')">SHOP</button>
+                <button class="menu-btn" onclick="switchView('view-achvmt')">ACHVMT</button>
+                <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
             </div>
         </div>
 
-        <div id="heat-container">
-            <div id="heat-bar"></div>
+        <!-- CENTER COLUMN: Switch & Lightning -->
+        <div id="center-col">
+            <div id="lightning-container">
+                <svg id="lightning-bolt" viewBox="0 0 100 100">
+                    <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
+                </svg>
+            </div>
+
+            <div id="switch-container" onclick="toggleSwitch()">
+                <div id="switch-plate">
+                    <div class="screw top"></div>
+                    <div id="switch-rocker"></div>
+                    <div class="screw bottom"></div>
+                </div>
+            </div>
+
+            <div id="heat-container">
+                <div id="heat-bar"></div>
+            </div>
         </div>
 
-        <div id="prestige-container">
-            <div id="prestige-info">
-                <div>OVERLOAD GRID</div>
-                <div>Bonus: <span id="prestige-bonus">0%</span> | Gain: <span id="prestige-gain">0</span></div>
+        <!-- RIGHT COLUMN: Prestige -->
+        <div id="right-col">
+            <div id="prestige-container">
+                <div id="prestige-info">
+                    <div>OVERLOAD GRID</div>
+                    <div>Bonus: <span id="prestige-bonus">0%</span> | Gain: <span id="prestige-gain">0</span></div>
+                </div>
+                <button id="prestige-btn" onclick="doPrestige()" disabled>OVERLOAD</button>
             </div>
-            <button id="prestige-btn" onclick="doPrestige()" disabled>OVERLOAD</button>
         </div>
 
         <div id="float-container" style="position: absolute; top: 40%; left: 50%; width: 1px; height: 1px; z-index: 10;"></div>
@@ -77,7 +86,8 @@
         </div>
     </div>
 
-    <div id="view-shop" class="view">
+    <!-- ================= VIEW: SHOP ================= -->
+    <div id="view-shop" class="view overlay-view">
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">STORE</h2>
@@ -204,7 +214,7 @@
         </div>
     </div>
 
-    <div id="view-achvmt" class="view">
+    <div id="view-achvmt" class="view overlay-view">
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">ACHIEVEMENTS</h2>
@@ -213,7 +223,7 @@
         </div>
     </div>
 
-    <div id="view-endgame" class="view">
+    <div id="view-endgame" class="view overlay-view">
         <button class="back-btn" onclick="switchView('view-game')">&lt;--- back to clicking</button>
         <div class="page-container">
             <h2 class="page-title">COSMIC CHALLENGES</h2>
