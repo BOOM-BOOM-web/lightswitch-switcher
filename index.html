@@ -24,9 +24,8 @@
         <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY</button>
     </div>
 
-    <!-- Emergency Reset Button -->
-    <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-        <button onclick="resetSave()" style="background: #ff3333; color: #fff; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; cursor: pointer;">RESET SAVE</button>
+    <div id="reset-btn-container">
+        <button onclick="resetSave()" id="reset-btn">RESET</button>
     </div>
 
     <div id="view-game" class="view active">
@@ -42,17 +41,19 @@
             <button class="menu-btn" id="endgame-btn" style="display:none;" onclick="switchView('view-endgame')">COSMOS</button>
         </div>
 
-        <div id="lightning-container">
-            <svg id="lightning-bolt" viewBox="0 0 100 100">
-                <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
-            </svg>
-        </div>
+        <div id="switch-wrapper">
+            <div id="lightning-container">
+                <svg id="lightning-bolt" viewBox="0 0 100 100">
+                    <polygon points="60,0 20,60 45,60 30,100 80,40 55,40" />
+                </svg>
+            </div>
 
-        <div id="switch-container" onclick="toggleSwitch()">
-            <div id="switch-plate">
-                <div class="screw top"></div>
-                <div id="switch-rocker"></div>
-                <div class="screw bottom"></div>
+            <div id="switch-container" onclick="toggleSwitch()">
+                <div id="switch-plate">
+                    <div class="screw top"></div>
+                    <div id="switch-rocker"></div>
+                    <div class="screw bottom"></div>
+                </div>
             </div>
         </div>
 
@@ -88,7 +89,6 @@
                 <div class="upg-info">Cost: <span id="switchTier-cost">5,000</span> W</div>
                 <div class="upg-info">Upgrade switch material for massive multipliers!</div>
             </div>
-
             <div class="upgrade-card" onmouseenter="playHover()" onclick="buyUpgrade('click')">
                 <div class="upg-name">- Heavier Switch <span id="click-level">0</span></div>
                 <div class="upg-info">Cost: <span id="click-cost">15</span> W</div>
