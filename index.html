@@ -25,9 +25,9 @@
         <button id="daily-reward-btn" onclick="claimDaily()">CLAIM DAILY BONUS</button>
     </div>
 
-    <!-- Emergency Reset Button (Un-breakable inline JS) -->
+    <!-- Emergency Reset Button -->
     <div style="position: fixed; top: 20px; left: 20px; z-index: 1000;">
-        <button onclick="if(confirm('Wipe ALL save data? This cannot be undone.')){localStorage.clear();window.location.reload();}" style="background: #ff3333; color: #fff; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; cursor: pointer;">RESET SAVE</button>
+        <button onclick="resetSave()" style="background: #ff3333; color: #fff; border: 2px solid #fff; padding: 10px; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; cursor: pointer;">RESET SAVE</button>
     </div>
 
     <div id="view-game" class="view active">
