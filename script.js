@@ -1,6 +1,6 @@
 // --- SAVE MANAGER ---
 const SaveManager = {
-    key: 'flipTheSwitch_v3', // Using v3 to wipe old overpowered saves
+    key: 'flipTheSwitch_v3',
     save() {
         state.lastSaved = Date.now();
         localStorage.setItem(this.key, JSON.stringify(state));
@@ -93,10 +93,15 @@ const SaveManager = {
     }
 };
 
+// Fixed: Now completely wipes ALL local storage data
 function resetSave() {
     if (confirm("Are you sure you want to wipe ALL save data? This cannot be undone.")) {
-        localStorage.removeItem('flipTheSwitch_v3');
-        location.reload();
+        try {
+            localStorage.clear(); // Nukes everything saved in the browser
+        } catch(e) {
+            console.error("Could not clear local storage", e);
+        }
+        location.reload(); // Refresh the page
     }
 }
 
@@ -136,7 +141,6 @@ function startMusic() { if (musicSound && musicSound.paused) { musicSound.play()
 document.body.addEventListener('click', startMusic, { once: true });
 
 // --- SWITCH MATERIAL TIERS ---
-// Rebalanced: Slower progression, higher costs
 const switchTiers = [
     { name: "Basic", cost: 0, mult: 1, texture: "none", color: "#444" },
     { name: "Copper", cost: 5000, mult: 2, texture: "textures/copper.jpeg", color: "#b87333" },
@@ -161,31 +165,30 @@ function applySwitchVisuals() {
 }
 
 // --- GAME STATE ---
-// Rebalanced Upgrades: Much slower growth, higher costs
 const state = {
     watts: 0, totalWatts: 0, heat: 0, isOn: true, breakerTripped: false,
     capacitors: 0, switchTier: 0, overdriveActive: false, lastDailyClaim: 0,
     isRebirthing: false, endgameUnlocked: false,
     upgrades: {
         click: { level: 0, baseCost: 15, rate: 1.15, value: 1 },
-        voltage: { level: 0, baseCost: 1000, rate: 1.4, value: 0.5 },        // +50% click per level
-        surge: { level: 0, baseCost: 2500, rate: 1.35, value: 0.005 },       // +0.5% crit per level
-        overcharge: { level: 0, baseCost: 50000, rate: 1.8, value: 1 },      // +1x crit mult per level
-        thermoGen: { level: 0, baseCost: 100000, rate: 1.7, value: 0.005 },  // +0.5% per 1% heat
-        servo: { level: 0, baseCost: 25000, rate: 1.6, value: 0.02 },        // 2% click -> W/s
+        voltage: { level: 0, baseCost: 1000, rate: 1.4, value: 0.5 },        
+        surge: { level: 0, baseCost: 2500, rate: 1.35, value: 0.005 },       
+        overcharge: { level: 0, baseCost: 50000, rate: 1.8, value: 1 },      
+        thermoGen: { level: 0, baseCost: 100000, rate: 1.7, value: 0.005 },  
+        servo: { level: 0, baseCost: 25000, rate: 1.6, value: 0.02 },        
         cooling: { level: 0, baseCost: 500, rate: 1.45, value: 2 },
         liquid: { level: 0, baseCost: 10000, rate: 1.55, value: 0.1 },
         thermal: { level: 0, baseCost: 2000, rate: 1.35, value: 0.2 },
-        auto: { level: 0, baseCost: 100, rate: 1.15, value: 0.1 },           // 0.1 W/s per level
-        quantum: { level: 0, baseCost: 50000, rate: 1.7, value: 0.25 },      // +25% auto per level
-        solar: { level: 0, baseCost: 5000, rate: 1.3, value: 1 },            // 1 W/s per level
-        flux: { level: 0, baseCost: 500000, rate: 1.9, value: 1 },           // +1x click per level
-        plasma: { level: 0, baseCost: 2500000, rate: 1.75, value: 10 },      // 10 W/s per level
-        fusion: { level: 0, baseCost: 10000000, rate: 1.9, value: 0.5 },     // +50% auto per level
-        antimatter: { level: 0, baseCost: 50000000, rate: 2.2, value: 0.01 },// +1% crit per level
-        entangler: { level: 0, baseCost: 250000000, rate: 2.5, value: 0.15 },// +15% ALL per level
-        darkEnergy: { level: 0, baseCost: 1000000000, rate: 2.0, value: 100 }, // 100 W/s per level
-        singularity: { level: 0, baseCost: 5000000000, rate: 2.4, value: 2 }, // +2x click per level
+        auto: { level: 0, baseCost: 100, rate: 1.15, value: 0.1 },           
+        quantum: { level: 0, baseCost: 50000, rate: 1.7, value: 0.25 },      
+        solar: { level: 0, baseCost: 5000, rate: 1.3, value: 1 },            
+        flux: { level: 0, baseCost: 500000, rate: 1.9, value: 1 },           
+        plasma: { level: 0, baseCost: 2500000, rate: 1.75, value: 10 },      
+        fusion: { level: 0, baseCost: 10000000, rate: 1.9, value: 0.5 },     
+        antimatter: { level: 0, baseCost: 50000000, rate: 2.2, value: 0.01 },
+        entangler: { level: 0, baseCost: 250000000, rate: 2.5, value: 0.15 },
+        darkEnergy: { level: 0, baseCost: 1000000000, rate: 2.0, value: 100 }, 
+        singularity: { level: 0, baseCost: 5000000000, rate: 2.4, value: 2 }, 
         neutronium: { level: 0, baseCost: 25000000000, rate: 2.1, value: 0.2 },
         cryo: { level: 0, baseCost: 100000000000, rate: 2.0, value: 1.0 },
         infinity: { level: 0, baseCost: 500000000000, rate: 2.3, value: 0.02 }
@@ -375,7 +378,6 @@ function getAutoPower() {
     return ((autoBase * quantumMult * fusionMult) + solarBase + plasmaBase + darkEnergyBase + servoConversion) * tierMult * prestigeMult * achvMult * endgameMult * rebirthMult * entanglerMult * overdriveMult;
 }
 
-// Rebalanced: Requires 10 Million Total Watts for 1 Capacitor
 function getPrestigeGain() { if (state.totalWatts < 10000000) return 0; return Math.floor(Math.sqrt(state.totalWatts / 10000000)); }
 
 // --- DAILY REWARD ---
@@ -541,7 +543,6 @@ function renderAchievements() {
 }
 
 // --- UI UPDATES ---
-// Fixed: Shows actual numbers with commas, then K/M/B/T, then Scientific Notation. Never undefined.
 function formatNumber(num) {
     if (num === Infinity || isNaN(num)) return "∞";
     if (num < 1e6) {
@@ -552,7 +553,6 @@ function formatNumber(num) {
     if (num < 1e15) return (num / 1e12).toFixed(2) + "T";
     if (num < 1e18) return (num / 1e15).toFixed(2) + "Qa";
     if (num < 1e21) return (num / 1e18).toFixed(2) + "Qi";
-    // Scientific notation for extreme endgame numbers
     return num.toExponential(2).replace("e+", "e");
 }
 
