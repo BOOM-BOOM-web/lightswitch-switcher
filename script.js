@@ -93,15 +93,43 @@ const SaveManager = {
     }
 };
 
-// Fixed: Now completely wipes ALL local storage data
+// Fixed: Bulletproof reset function
 function resetSave() {
     if (confirm("Are you sure you want to wipe ALL save data? This cannot be undone.")) {
+        // 1. Destroy all browser storage
         try {
-            localStorage.clear(); // Nukes everything saved in the browser
+            localStorage.clear();
+            sessionStorage.clear();
         } catch(e) {
-            console.error("Could not clear local storage", e);
+            console.error("Storage clear error:", e);
         }
-        location.reload(); // Refresh the page
+        
+        // 2. Manually wipe the state object in memory
+        state.watts = 0;
+        state.totalWatts = 0;
+        state.heat = 0;
+        state.isOn = true;
+        state.breakerTripped = false;
+        state.capacitors = 0;
+        state.switchTier = 0;
+        state.overdriveActive = false;
+        state.lastDailyClaim = 0;
+        state.isRebirthing = false;
+        state.endgameUnlocked = false;
+        state.rebirthTree = {};
+        
+        for (const key in state.upgrades) {
+            state.upgrades[key].level = 0;
+        }
+        for (const key in state.achievements) {
+            state.achievements[key].unlocked = false;
+        }
+        for (const key in state.endgame) {
+            state.endgame[key].completed = false;
+        }
+        
+        // 3. Force a hard reload (bypasses browser cache)
+        window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
     }
 }
 
